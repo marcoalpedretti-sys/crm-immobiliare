@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Immobilia CRM</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --card: #12121a;
+    --border: #1e1e2e;
+    --accent: #c8a96e;
+    --accent2: #e8c88e;
+    --text: #e8e8f0;
+    --muted: #6b6b8a;
+    --green: #4ade80;
+    --blue: #60a5fa;
+    --orange: #fb923c;
+    --red: #f87171;
+    --sidebar-w: 220px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+
+  /* SIDEBAR */
+  #sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w);
+    background: var(--card); border-right: 1px solid var(--border);
+    padding: 32px 0; z-index: 200; transition: transform 0.3s ease;
+    display: flex; flex-direction: column;
+  }
+  #sidebar.collapsed { transform: translateX(calc(-1 * var(--sidebar-w))); }
+  .sidebar-logo { padding: 0 24px; margin-bottom: 40px; }
+  .sidebar-logo h1 { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--accent); letter-spacing: 1px; }
+  .sidebar-logo small { color: var(--muted); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; }
+  .nav-btn {
+    width: 100%; background: none; border: none; border-left: 3px solid transparent;
+    color: var(--muted); padding: 12px 24px; text-align: left; cursor: pointer;
+    font-size: 14px; font-family: 'DM Sans', sans-serif; display: flex; align-items: center; gap: 10px;
+    transition: all 0.2s;
+  }
+  .nav-btn:hover { color: var(--accent); background: rgba(200,169,110,0.08); }
+  .nav-btn.active { color: var(--accent); background: rgba(200,169,110,0.12); border-left-color: var(--accent); }
+
+  /* TOGGLE BUTTON — always visible, fixed position */
+  #toggle-sidebar {
+    position: fixed; bottom: 24px; left: 0; z-index: 300;
+    background: var(--card); border: 1px solid var(--border); border-left: none;
+    color: var(--muted); border-radius: 0 8px 8px 0;
+    width: 28px; height: 48px; cursor: pointer; font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+    transition: left 0.3s ease, color 0.2s, background 0.2s;
+  }
+  #toggle-sidebar:hover { color: var(--accent); background: var(--border); }
+  #toggle-sidebar.sidebar-open { left: var(--sidebar-w); }
+
+  /* MAIN */
+  #main {
+    margin-left: var(--sidebar-w); padding: 40px 40px; min-height: 100vh;
+    transition: margin-left 0.3s ease;
+  }
+  #main.expanded { margin-left: 0; padding-left: 40px; }
+
+  /* GOOGLE AUTH BAR */
+  #google-bar {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 12px 20px; margin-bottom: 28px; display: flex; align-items: center;
+    justify-content: space-between; gap: 16px;
+  }
+  #google-bar .gcal-info { display: flex; align-items: center; gap: 12px; }
+  #google-bar .gcal-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--red); }
+  #google-bar .gcal-dot.connected { background: var(--green); }
+  #gcal-btn {
+    background: var(--accent); border: none; color: var(--bg); border-radius: 8px;
+    padding: 8px 16px; cursor: pointer; font-weight: 600; font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+  }
+  #gcal-btn.disconnect { background: none; border: 1px solid var(--red); color: var(--red); }
+
+  /* CARDS */
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px; margin-bottom: 12px; transition: border-color 0.2s;
+  }
+  .card:hover { border-color: rgba(200,169,110,0.35); }
+  .card-header { display: flex; justify-content: space-between; align-items: flex-start; }
+  .card-name { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 600; }
+  .card-sub { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .card-note { color: var(--muted); font-size: 12px; font-style: italic; margin-top: 8px; }
+  .card-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .card-expand { margin-top: 16px; border-top: 1px solid var(--border); padding-top: 14px; }
+  .activity-row {
+    background: var(--bg); border-radius: 8px; padding: 8px 12px; margin-bottom: 6px;
+    display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  }
+
+  /* STATS GRID */
+  .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px; }
+  .stat-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 24px; text-align: center;
+  }
+  .stat-icon { font-size: 28px; }
+  .stat-value { font-family: 'Playfair Display', serif; font-size: 36px; font-weight: 700; margin: 8px 0; }
+  .stat-label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
+
+  /* SECTION HEADER */
+  .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
+  .section-title { font-family: 'Playfair Display', serif; font-size: 32px; }
+  .section-sub { color: var(--muted); margin-top: 6px; font-size: 14px; }
+
+  /* BUTTONS */
+  .btn { border: none; border-radius: 10px; padding: 10px 20px; cursor: pointer; font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: 14px; }
+  .btn-primary { background: var(--accent); color: var(--bg); }
+  .btn-sm { padding: 4px 10px; font-size: 13px; border-radius: 8px; cursor: pointer; font-family: 'DM Sans', sans-serif; border: none; }
+  .btn-edit { background: none; border: 1px solid rgba(200,169,110,0.4) !important; color: var(--accent); }
+  .btn-del { background: none; border: 1px solid rgba(248,113,113,0.4) !important; color: var(--red); }
+  .btn-expand { background: none; border: 1px solid var(--border) !important; color: var(--muted); }
+  .btn-add-act { background: rgba(200,169,110,0.15); border: 1px solid var(--accent) !important; color: var(--accent); }
+  .btn-gcal { background: rgba(96,165,250,0.15); border: 1px solid rgba(96,165,250,0.4) !important; color: var(--blue); font-size: 11px !important; }
+
+  /* BADGE */
+  .badge { border-radius: 20px; padding: 2px 10px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; display: inline-block; }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 500;
+    display: none; align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+    padding: 32px; min-width: 480px; max-width: 600px; max-height: 85vh;
+    overflow-y: auto; position: relative;
+  }
+  .modal-title { font-family: 'Playfair Display', serif; font-size: 18px; color: var(--accent); }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+  .modal-close { background: none; border: none; color: var(--muted); font-size: 22px; cursor: pointer; }
+
+  /* FORM */
+  .form-group { margin-bottom: 14px; }
+  .form-label { color: var(--muted); font-size: 12px; letter-spacing: 1px; text-transform: uppercase; display: block; margin-bottom: 4px; }
+  .form-control {
+    width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 12px; color: var(--text); font-size: 14px; font-family: 'DM Sans', sans-serif;
+  }
+  .form-control:focus { outline: none; border-color: var(--accent); }
+  textarea.form-control { resize: vertical; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* TABS ACTIVITY */
+  .act-section { margin-bottom: 28px; }
+  .act-section-title { font-size: 13px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+
+  /* TWO COL */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .col-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
+  .col-title { color: var(--accent); font-size: 13px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 16px; }
+
+  /* TOAST */
+  #toast {
+    position: fixed; bottom: 24px; right: 24px; background: var(--green);
+    color: #000; border-radius: 10px; padding: 12px 20px; font-weight: 600;
+    z-index: 9999; display: none; font-family: 'DM Sans', sans-serif; font-size: 14px;
+    animation: slideIn 0.3s ease;
+  }
+  @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  /* CONFIG PANEL */
+  #config-panel {
+    background: rgba(200,169,110,0.08); border: 1px solid rgba(200,169,110,0.3);
+    border-radius: 12px; padding: 20px; margin-bottom: 24px; display: none;
+  }
+  #config-panel.open { display: block; }
+
+  /* PAGE */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  @media (max-width: 768px) {
+    :root { --sidebar-w: 200px; }
+    #main { padding: 20px; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .two-col { grid-template-columns: 1fr; }
+    .form-row { grid-template-columns: 1fr; }
+    .modal-box { min-width: 90vw; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside id="sidebar">
+  <div class="sidebar-logo">
+    <h1>Immobilia</h1>
+    <small>CRM Immobiliare</small>
+  </div>
+  <button class="nav-btn active" onclick="showPage('dashboard')">◈ &nbsp;Dashboard</button>
+  <button class="nav-btn" onclick="showPage('acquirenti')">👥 &nbsp;Acquirenti</button>
+  <button class="nav-btn" onclick="showPage('proprietari')">🏠 &nbsp;Proprietari</button>
+  <button class="nav-btn" onclick="showPage('immobili')">🏢 &nbsp;Immobili</button>
+  <button class="nav-btn" onclick="showPage('attivita')">📋 &nbsp;Attività</button>
+  <div style="margin-top:auto; padding: 0 24px 16px; display:flex; flex-direction:column; gap:8px;">
+    <button class="nav-btn" style="padding:10px 0; font-size:12px;" onclick="showPage('impostazioni')">⚙️ &nbsp;Impostazioni</button>
+  </div>
+</aside>
+
+<!-- TOGGLE — always visible outside sidebar -->
+<button id="toggle-sidebar" class="sidebar-open" onclick="toggleSidebar()" title="Mostra/Nascondi menu">◀</button>
+
+<!-- MAIN -->
+<div id="main">
+
+  <!-- GOOGLE BAR -->
+  <div id="google-bar">
+    <div class="gcal-info">
+      <div class="gcal-dot" id="gcal-dot"></div>
+      <div>
+        <div style="font-size:14px;font-weight:600" id="gcal-status-text">Google Calendar non connesso</div>
+        <div style="font-size:12px;color:var(--muted)" id="gcal-user-text">Connetti per sincronizzare appuntamenti</div>
+      </div>
+    </div>
+    <button id="gcal-btn" onclick="handleGCalAuth()">🔗 Connetti Google Calendar</button>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="page-dashboard" class="page active">
+    <h1 class="section-title">Dashboard</h1>
+    <p class="section-sub" style="margin-bottom:28px">Panoramica generale</p>
+    <div class="stats-grid" id="stats-grid"></div>
+    <div class="two-col">
+      <div class="col-card">
+        <div class="col-title">Attività Recenti</div>
+        <div id="dash-attivita"></div>
+      </div>
+      <div class="col-card">
+        <div class="col-title">Immobili</div>
+        <div id="dash-immobili"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACQUIRENTI -->
+  <div id="page-acquirenti" class="page">
+    <div class="section-header">
+      <div><h1 class="section-title">Acquirenti</h1><p class="section-sub" id="acq-count"></p></div>
+      <button class="btn btn-primary" onclick="openModal('acquirente')">+ Nuovo Acquirente</button>
+    </div>
+    <div id="list-acquirenti"></div>
+  </div>
+
+  <!-- PROPRIETARI -->
+  <div id="page-proprietari" class="page">
+    <div class="section-header">
+      <div><h1 class="section-title">Proprietari</h1><p class="section-sub" id="prop-count"></p></div>
+      <button class="btn btn-primary" onclick="openModal('proprietario')">+ Nuovo Proprietario</button>
+    </div>
+    <div id="list-proprietari"></div>
+  </div>
+
+  <!-- IMMOBILI -->
+  <div id="page-immobili" class="page">
+    <div class="section-header">
+      <div><h1 class="section-title">Immobili</h1><p class="section-sub" id="imm-count"></p></div>
+      <button class="btn btn-primary" onclick="openModal('immobile')">+ Nuovo Immobile</button>
+    </div>
+    <div id="list-immobili"></div>
+  </div>
+
+  <!-- ATTIVITÀ -->
+  <div id="page-attivita" class="page">
+    <div class="section-header">
+      <div>
+        <h1 class="section-title">Attività</h1>
+        <div style="display:flex;gap:10px;margin-top:8px" id="act-badges"></div>
+      </div>
+      <button class="btn btn-primary" onclick="openModal('attivita')">+ Nuova Attività</button>
+    </div>
+    <div id="list-attivita"></div>
+  </div>
+
+  <!-- IMPOSTAZIONI -->
+  <div id="page-impostazioni" class="page">
+    <h1 class="section-title" style="margin-bottom:8px">Impostazioni</h1>
+    <p class="section-sub" style="margin-bottom:28px">Configura l'integrazione con Google Calendar</p>
+    <div class="col-card" style="max-width:600px">
+      <div class="col-title">Google Calendar API</div>
+      <p style="color:var(--muted);font-size:14px;margin-bottom:20px;line-height:1.6">
+        Per connettere Google Calendar segui questi passaggi:<br><br>
+        1. Vai su <strong style="color:var(--accent)">console.cloud.google.com</strong><br>
+        2. Crea un progetto → abilita <strong style="color:var(--accent)">Google Calendar API</strong><br>
+        3. Crea credenziali <strong style="color:var(--accent)">OAuth 2.0 → Web application</strong><br>
+        4. In <em>Authorized JavaScript origins</em> inserisci:<br>
+        &nbsp;&nbsp;<code style="color:var(--green)">https://marcoalpedretti-sys.github.io</code><br>
+        5. In <em>Authorized redirect URIs</em> inserisci:<br>
+        &nbsp;&nbsp;<code style="color:var(--green)">https://marcoalpedretti-sys.github.io/crm-immobiliare/immobiliare-crm.html</code><br>
+        6. Salva e aspetta 1-2 minuti<br>
+        7. Incolla il <strong style="color:var(--accent)">Client ID</strong> qui sotto e salva
+      </p>
+      <div class="form-group">
+        <label class="form-label">Google OAuth Client ID</label>
+        <input type="text" id="client-id-input" class="form-control" placeholder="xxxxxxxxxx.apps.googleusercontent.com" value="">
+      </div>
+      <div class="form-group" style="margin-top:4px">
+        <label class="form-label">Account Google da usare</label>
+        <input type="email" id="gcal-email-input" class="form-control" placeholder="tuoemail@gmail.com">
+        <div style="color:var(--muted);font-size:11px;margin-top:4px">Verrà pre-selezionato automaticamente al momento della connessione</div>
+      </div>
+      <button class="btn btn-primary" onclick="saveClientId()" style="margin-top:8px">💾 Salva Impostazioni</button>
+      <div id="client-id-status" style="margin-top:12px;font-size:13px;color:var(--muted)"></div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">Titolo</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────
+//  DATA
+// ─────────────────────────────────────────────
+let db = {
+  acquirenti: [
+    { id:1, nome:"Marco", cognome:"Rossi", email:"marco.rossi@email.it", telefono:"333-1234567", citta:"Milano", budget:"350.000", note:"Cerca trilocale zona centro" },
+    { id:2, nome:"Laura", cognome:"Bianchi", email:"laura.bianchi@email.it", telefono:"347-9876543", citta:"Roma", budget:"280.000", note:"Preferisce piano alto con ascensore" },
+  ],
+  proprietari: [
+    { id:1, nome:"Giovanni", cognome:"Ferrari", email:"g.ferrari@email.it", telefono:"328-5556677", citta:"Milano", note:"Disponibile visite il weekend" },
+    { id:2, nome:"Anna", cognome:"Conti", email:"anna.conti@email.it", telefono:"366-1122334", citta:"Roma", note:"Vuole vendere entro 6 mesi" },
+  ],
+  immobili: [
+    { id:1, titolo:"Trilocale Via Montenapoleone", tipo:"Appartamento", citta:"Milano", indirizzo:"Via Montenapoleone 12", prezzo:"320.000", mq:85, locali:3, proprietarioId:1, acquirenteId:null, stato:"disponibile", contratto:"vendita" },
+    { id:2, titolo:"Bilocale Prati", tipo:"Appartamento", citta:"Roma", indirizzo:"Via Cola di Rienzo 45", prezzo:"265.000", mq:60, locali:2, proprietarioId:2, acquirenteId:2, stato:"trattativa", contratto:"locazione" },
+  ],
+  attivita: [
+    { id:1, tipo:"telefonata", data:"2025-03-10", ora:"10:30", personaTipo:"acquirente", personaId:1, immobileId:1, note:"Confermato interesse trilocale Milano", durata:"15 min" },
+    { id:2, tipo:"email", data:"2025-03-11", ora:"14:00", personaTipo:"proprietario", personaId:1, immobileId:1, note:"Inviata proposta di acquisto", oggetto:"Proposta acquisto Via Montenapoleone" },
+    { id:3, tipo:"appuntamento", data:"2025-03-15", ora:"11:00", personaTipo:"acquirente", personaId:2, immobileId:2, note:"Visita immobile Prati", luogo:"Via Cola di Rienzo 45" },
+  ],
+};
+
+function saveDb() { try { localStorage.setItem('immobilia_db', JSON.stringify(db)); } catch(e){} }
+function loadDb() { try { const s = localStorage.getItem('immobilia_db'); if(s) db = JSON.parse(s); } catch(e){} }
+loadDb();
+
+// ─────────────────────────────────────────────
+//  GOOGLE CALENDAR
+// ─────────────────────────────────────────────
+let gCalConnected = false;
+let gCalUser = '';
+let gAccessToken = '';
+let CLIENT_ID = localStorage.getItem('gcal_client_id') || '';
+let GCAL_EMAIL = localStorage.getItem('gcal_email') || '';
+
+function saveClientId() {
+  CLIENT_ID = document.getElementById('client-id-input').value.trim();
+  GCAL_EMAIL = document.getElementById('gcal-email-input').value.trim();
+  if (!CLIENT_ID) { document.getElementById('client-id-status').textContent = '⚠️ Inserisci un Client ID valido'; return; }
+  localStorage.setItem('gcal_client_id', CLIENT_ID);
+  localStorage.setItem('gcal_email', GCAL_EMAIL);
+  document.getElementById('client-id-status').innerHTML = '<span style="color:var(--green)">✓ Impostazioni salvate.</span>';
+  toast('Impostazioni salvate!');
+}
+
+function handleGCalAuth() {
+  if (gCalConnected) { disconnectGCal(); return; }
+  if (!CLIENT_ID) {
+    toast('⚠️ Prima configura il Client ID in Impostazioni', 'orange');
+    showPage('impostazioni'); return;
+  }
+  // Salva la pagina corrente per tornare dopo il redirect
+  localStorage.setItem('gcal_return_page', window.location.href.split('?')[0].split('#')[0]);
+  initGoogleAuth();
+}
+
+function initGoogleAuth() {
+  const redirectUri = 'https://marcoalpedretti-sys.github.io/crm-immobiliare/immobiliare-crm.html';
+  const params = new URLSearchParams({
+    client_id: CLIENT_ID,
+    redirect_uri: redirectUri,
+    response_type: 'token',
+    scope: 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/userinfo.email',
+    prompt: 'login consent',
+    include_granted_scopes: 'true',
+  });
+  if (GCAL_EMAIL) params.set('login_hint', GCAL_EMAIL);
+  window.location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
+}
+
+function checkGCalCallback() {
+  // Legge il token dall'hash URL dopo il redirect di Google
+  const hash = window.location.hash;
+  if (!hash || !hash.includes('access_token')) return;
+  const result = new URLSearchParams(hash.substring(1));
+  const token = result.get('access_token');
+  if (!token) return;
+  // Pulisce l'hash dall'URL senza ricaricare la pagina
+  history.replaceState(null, '', window.location.pathname);
+  gAccessToken = token;
+  fetchGCalUserInfo();
+}
+
+function fetchGCalUserInfo() {
+  fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+    headers: { 'Authorization': 'Bearer ' + gAccessToken }
+  }).then(r => r.json()).then(data => {
+    gCalConnected = true;
+    gCalUser = data.email || 'Account Google';
+    updateGCalBar();
+    toast('✓ Connesso come ' + gCalUser);
+  }).catch(() => {
+    gCalConnected = true;
+    gCalUser = 'Account Google';
+    updateGCalBar();
+    toast('✓ Google Calendar connesso!');
+  });
+}
+
+function disconnectGCal() {
+  gCalConnected = false; gAccessToken = ''; gCalUser = '';
+  updateGCalBar();
+  toast('Google Calendar disconnesso');
+}
+
+function updateGCalBar() {
+  document.getElementById('gcal-dot').className = 'gcal-dot' + (gCalConnected ? ' connected' : '');
+  document.getElementById('gcal-status-text').textContent = gCalConnected ? 'Google Calendar connesso' : 'Google Calendar non connesso';
+  document.getElementById('gcal-user-text').textContent = gCalConnected ? gCalUser : 'Connetti per sincronizzare appuntamenti';
+  const btn = document.getElementById('gcal-btn');
+  btn.textContent = gCalConnected ? '✕ Disconnetti' : '🔗 Connetti Google Calendar';
+  btn.className = gCalConnected ? 'disconnect' : '';
+}
+
+async function addToGoogleCalendar(attivita) {
+  if (!gCalConnected || !gAccessToken) {
+    toast('⚠️ Connetti prima Google Calendar', 'orange'); return;
+  }
+  const p = getPersona(attivita.personaTipo, attivita.personaId);
+  const startDt = `${attivita.data}T${attivita.ora || '09:00'}:00`;
+  const [h, m] = (attivita.ora || '09:00').split(':').map(Number);
+  const endH = String(h + 1).padStart(2, '0');
+  const endDt = `${attivita.data}T${endH}:${String(m).padStart(2,'0')}:00`;
+
+  const event = {
+    summary: `[Immobilia] ${attivita.tipo.charAt(0).toUpperCase() + attivita.tipo.slice(1)} – ${p ? p.nome + ' ' + p.cognome : ''}`,
+    description: attivita.note + (attivita.oggetto ? '\nOggetto: ' + attivita.oggetto : '') + (attivita.luogo ? '\nLuogo: ' + attivita.luogo : ''),
+    location: attivita.luogo || '',
+    start: { dateTime: startDt, timeZone: 'Europe/Rome' },
+    end: { dateTime: endDt, timeZone: 'Europe/Rome' },
+  };
+
+  try {
+    const res = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + gAccessToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify(event)
+    });
+    if (res.ok) { toast('✓ Evento aggiunto a Google Calendar!'); }
+    else { const err = await res.json(); toast('Errore: ' + (err.error?.message || 'sconosciuto'), 'red'); }
+  } catch(e) { toast('Errore di rete', 'red'); }
+}
+
+// ─────────────────────────────────────────────
+//  SIDEBAR
+// ─────────────────────────────────────────────
+let sidebarOpen = true;
+function toggleSidebar() {
+  sidebarOpen = !sidebarOpen;
+  document.getElementById('sidebar').classList.toggle('collapsed', !sidebarOpen);
+  document.getElementById('main').classList.toggle('expanded', !sidebarOpen);
+  const btn = document.getElementById('toggle-sidebar');
+  btn.textContent = sidebarOpen ? '◀' : '▶';
+  btn.classList.toggle('sidebar-open', sidebarOpen);
+}
+
+// ─────────────────────────────────────────────
+//  NAVIGATION
+// ─────────────────────────────────────────────
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => { if(b.textContent.toLowerCase().includes(name) || (name==='impostazioni' && b.textContent.includes('⚙'))) b.classList.add('active'); });
+  renderPage(name);
+}
+
+function renderPage(name) {
+  if(name === 'dashboard') renderDashboard();
+  else if(name === 'acquirenti') renderPersone('acquirenti');
+  else if(name === 'proprietari') renderPersone('proprietari');
+  else if(name === 'immobili') renderImmobili();
+  else if(name === 'attivita') renderAttivita();
+  else if(name === 'impostazioni') {
+    const inp = document.getElementById('client-id-input');
+    if(inp && CLIENT_ID) inp.value = CLIENT_ID;
+    const emailInp = document.getElementById('gcal-email-input');
+    if(emailInp && GCAL_EMAIL) emailInp.value = GCAL_EMAIL;
+  }
+}
+
+// ─────────────────────────────────────────────
+//  HELPERS
+// ─────────────────────────────────────────────
+function getPersona(tipo, id) {
+  const arr = tipo === 'acquirente' ? db.acquirenti : db.proprietari;
+  return arr.find(p => p.id === id);
+}
+function badge(text, color) {
+  return `<span class="badge" style="background:${color}22;color:${color};border:1px solid ${color}44">${text}</span>`;
+}
+function tipoColor(t) { return t==='telefonata'?'#4ade80':t==='email'?'#60a5fa':'#fb923c'; }
+function statoColor(s) { return s==='disponibile'?'#4ade80':s==='trattativa'?'#fb923c':'#f87171'; }
+function contrattoColor(c) { return c==='vendita'?'#c8a96e':c==='locazione'?'#a78bfa':'#34d399'; }
+function contrattoIcon(c) { return c==='vendita'?'🏷️':c==='locazione'?'📋':'🔑'; }
+function nextId(arr) { return arr.length ? Math.max(...arr.map(x=>x.id)) + 1 : 1; }
+function toast(msg, type='green') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.background = type==='green'?'#4ade80':type==='orange'?'#fb923c':'#f87171';
+  el.style.color = type==='green'?'#000':'#fff';
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 3000);
+}
+
+// ─────────────────────────────────────────────
+//  RENDER DASHBOARD
+// ─────────────────────────────────────────────
+function renderDashboard() {
+  const stats = [
+    { l:'Acquirenti', v:db.acquirenti.length, c:'#60a5fa', i:'👥' },
+    { l:'Proprietari', v:db.proprietari.length, c:'#4ade80', i:'🏠' },
+    { l:'Immobili', v:db.immobili.length, c:'#c8a96e', i:'🏢' },
+    { l:'Disponibili', v:db.immobili.filter(i=>i.stato==='disponibile').length, c:'#4ade80', i:'✅' },
+    { l:'In Trattativa', v:db.immobili.filter(i=>i.stato==='trattativa').length, c:'#fb923c', i:'🤝' },
+    { l:'Totale Attività', v:db.attivita.length, c:'#60a5fa', i:'📋' },
+  ];
+  document.getElementById('stats-grid').innerHTML = stats.map(s => `
+    <div class="stat-card">
+      <div class="stat-icon">${s.i}</div>
+      <div class="stat-value" style="color:${s.c}">${s.v}</div>
+      <div class="stat-label">${s.l}</div>
+    </div>`).join('');
+
+  document.getElementById('dash-attivita').innerHTML = db.attivita.slice(-5).reverse().map(a => {
+    const p = getPersona(a.personaTipo, a.personaId);
+    return `<div style="margin-bottom:12px">
+      ${badge(a.tipo, tipoColor(a.tipo))}
+      <div style="margin-top:4px;font-size:13px">${p ? p.nome+' '+p.cognome : '—'}</div>
+      <div style="color:var(--muted);font-size:11px">${a.data} • ${(a.note||'').slice(0,45)}${a.note&&a.note.length>45?'…':''}</div>
+    </div>`;
+  }).join('') || '<span style="color:var(--muted);font-size:13px">Nessuna attività</span>';
+
+  document.getElementById('dash-immobili').innerHTML = db.immobili.map(i => `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div>
+        <div style="font-size:13px">${i.titolo}</div>
+        <div style="color:var(--muted);font-size:11px">${i.citta} • €${i.prezzo}</div>
+      </div>
+      ${badge(i.stato, statoColor(i.stato))}
+    </div>`).join('') || '<span style="color:var(--muted);font-size:13px">Nessun immobile</span>';
+}
+
+// ─────────────────────────────────────────────
+//  RENDER PERSONE
+// ─────────────────────────────────────────────
+function renderPersone(tipo) {
+  const arr = db[tipo];
+  const tipoSing = tipo === 'acquirenti' ? 'acquirente' : 'proprietario';
+  document.getElementById(tipo==='acquirenti'?'acq-count':'prop-count').textContent = arr.length + ' contatti registrati';
+  document.getElementById('list-' + tipo).innerHTML = arr.map(p => personaCard(p, tipoSing)).join('');
+}
+
+function personaCard(p, tipo) {
+  const mieAtt = db.attivita.filter(a => a.personaTipo === tipo && a.personaId === p.id);
+  const attHtml = mieAtt.map(a => {
+    const immAtt = db.immobili.find(i => i.id === a.immobileId);
+    return `
+    <div class="activity-row">
+      ${badge(a.tipo, tipoColor(a.tipo))}
+      <span style="color:var(--muted);font-size:12px">${a.data} ${a.ora}</span>
+      <span style="font-size:13px">${a.note||''}</span>
+      ${immAtt ? `<span style="color:var(--accent);font-size:12px">🏢 ${immAtt.titolo}</span>` : ''}
+      ${gCalConnected && a.tipo==='appuntamento' ? `<button class="btn-sm btn-gcal" onclick="addToGoogleCalendar(${JSON.stringify(a).replace(/"/g,'&quot;')})">📅 Aggiungi a GCal</button>` : ''}
+    </div>`;
+  }).join('');
+
+  return `<div class="card" id="card-${tipo}-${p.id}">
+    <div class="card-header">
+      <div>
+        <div class="card-name">${p.nome} ${p.cognome}</div>
+        <div class="card-sub">📍 ${p.citta||''} &nbsp;•&nbsp; 📞 ${p.telefono||''}</div>
+        <div class="card-sub">✉️ ${p.email||''}</div>
+        ${p.budget ? `<div style="color:var(--accent);font-size:13px;margin-top:4px">💰 Budget: €${p.budget}</div>` : ''}
+      </div>
+      <div class="card-actions">
+        ${badge(mieAtt.length + ' attività', mieAtt.length>0?'#4ade80':'#6b6b8a')}
+        <button class="btn-sm btn-expand" onclick="toggleExpand('${tipo}',${p.id})">▼</button>
+        <button class="btn-sm btn-edit" onclick="openModal('${tipo}', ${p.id})">✏️</button>
+        <button class="btn-sm btn-del" onclick="deletePersona('${tipo}', ${p.id})">🗑</button>
+      </div>
+    </div>
+    ${p.note ? `<div class="card-note">"${p.note}"</div>` : ''}
+    <div class="card-expand" id="expand-${tipo}-${p.id}" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="color:var(--accent);font-size:13px;font-weight:600">STORICO ATTIVITÀ</span>
+        <button class="btn-sm btn-add-act" onclick="openModal('attivita', null, '${tipo}', ${p.id})">+ Aggiungi</button>
+      </div>
+      ${attHtml || '<span style="color:var(--muted);font-size:13px">Nessuna attività</span>'}
+    </div>
+  </div>`;
+}
+
+function toggleExpand(tipo, id) {
+  const el = document.getElementById(`expand-${tipo}-${id}`);
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function deletePersona(tipo, id) {
+  const arr = tipo === 'acquirente' ? 'acquirenti' : 'proprietari';
+  db[arr] = db[arr].filter(p => p.id !== id);
+  saveDb(); renderPersone(arr); toast('Contatto eliminato');
+}
+
+// ─────────────────────────────────────────────
+//  RENDER IMMOBILI
+// ─────────────────────────────────────────────
+function renderImmobili() {
+  document.getElementById('imm-count').textContent = db.immobili.length + ' immobili nel portafoglio';
+  document.getElementById('list-immobili').innerHTML = db.immobili.map(i => {
+    const prop = db.proprietari.find(p => p.id === i.proprietarioId);
+    const acq = db.acquirenti.find(a => a.id === i.acquirenteId);
+    return `<div class="card">
+      <div class="card-header">
+        <div style="flex:1">
+          <div class="card-name">${i.titolo}</div>
+          <div class="card-sub">📍 ${i.indirizzo}, ${i.citta}</div>
+          <div style="display:flex;gap:16px;margin-top:8px;flex-wrap:wrap;align-items:center">
+            <span style="color:var(--accent);font-size:15px;font-weight:700">€${i.prezzo}</span>
+            <span style="color:var(--muted);font-size:13px">📐 ${i.mq} mq</span>
+            <span style="color:var(--muted);font-size:13px">🚪 ${i.locali} locali</span>
+            ${badge(i.stato, statoColor(i.stato))}
+            ${i.contratto ? badge(contrattoIcon(i.contratto)+' '+i.contratto, contrattoColor(i.contratto)) : ''}
+          </div>
+          <div style="margin-top:10px;display:flex;gap:16px;flex-wrap:wrap">
+            ${prop ? `<span style="color:var(--muted);font-size:12px">👤 Proprietario: <span style="color:#60a5fa">${prop.nome} ${prop.cognome}</span></span>` : ''}
+            ${acq ? `<span style="color:var(--muted);font-size:12px">🤝 Acquirente: <span style="color:#4ade80">${acq.nome} ${acq.cognome}</span></span>` : ''}
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="btn-sm btn-edit" onclick="openModal('immobile', ${i.id})">✏️</button>
+          <button class="btn-sm btn-del" onclick="deleteImmobile(${i.id})">🗑</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('') || '<span style="color:var(--muted)">Nessun immobile</span>';
+}
+
+function deleteImmobile(id) {
+  db.immobili = db.immobili.filter(i => i.id !== id);
+  saveDb(); renderImmobili(); toast('Immobile eliminato');
+}
+
+// ─────────────────────────────────────────────
+//  RENDER ATTIVITÀ
+// ─────────────────────────────────────────────
+function renderAttivita() {
+  const tel = db.attivita.filter(a=>a.tipo==='telefonata').length;
+  const ema = db.attivita.filter(a=>a.tipo==='email').length;
+  const app = db.attivita.filter(a=>a.tipo==='appuntamento').length;
+  document.getElementById('act-badges').innerHTML =
+    badge('📞 '+tel+' telefonate','#4ade80') + ' ' +
+    badge('✉️ '+ema+' email','#60a5fa') + ' ' +
+    badge('📅 '+app+' appuntamenti','#fb923c');
+
+  const tipi = ['telefonata','email','appuntamento'];
+  const icons = { telefonata:'📞', email:'✉️', appuntamento:'📅' };
+  document.getElementById('list-attivita').innerHTML = tipi.map(tipo => {
+    const lista = db.attivita.filter(a => a.tipo === tipo);
+    const rows = lista.map(a => {
+      const p = getPersona(a.personaTipo, a.personaId);
+      const imm = db.immobili.find(i => i.id === a.immobileId);
+      const gcalBtn = (tipo==='appuntamento' && gCalConnected)
+        ? `<button class="btn-sm btn-gcal" onclick="addToGoogleCalendar(${JSON.stringify(a).replace(/"/g,'&quot;')})">📅 Aggiungi a GCal</button>` : '';
+      return `<div class="card" style="padding:14px 20px;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+          <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+            <span style="color:var(--muted);font-size:13px;min-width:110px">${a.data} ${a.ora||''}</span>
+            <div>
+              <div style="font-size:14px">${a.note||''}</div>
+              ${p ? `<div style="color:var(--muted);font-size:12px">${a.personaTipo==='acquirente'?'👥':'🏠'} ${p.nome} ${p.cognome}</div>` : ''}
+              ${imm ? `<div style="color:var(--accent);font-size:12px">🏢 ${imm.titolo}${imm.contratto?' · '+imm.contratto:''}</div>` : ''}
+              ${a.oggetto ? `<div style="color:#60a5fa;font-size:12px">Oggetto: ${a.oggetto}</div>` : ''}
+              ${a.luogo ? `<div style="color:#4ade80;font-size:12px">📍 ${a.luogo}</div>` : ''}
+              ${a.durata ? `<div style="color:var(--muted);font-size:12px">⏱ ${a.durata}</div>` : ''}
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            ${gcalBtn}
+            <button class="btn-sm btn-del" onclick="deleteAttivita(${a.id})">🗑</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('') || '<span style="color:var(--muted);font-size:13px">Nessuna registrata</span>';
+
+    return `<div class="act-section">
+      <div class="act-section-title" style="color:${tipoColor(tipo)}">${icons[tipo]} ${tipo.toUpperCase()}S</div>
+      ${rows}
+    </div>`;
+  }).join('');
+}
+
+function deleteAttivita(id) {
+  db.attivita = db.attivita.filter(a => a.id !== id);
+  saveDb(); renderAttivita(); toast('Attività eliminata');
+}
+
+// ─────────────────────────────────────────────
+//  MODAL
+// ─────────────────────────────────────────────
+let currentModal = null;
+let editingId = null;
+
+function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
+  currentModal = tipo; editingId = id;
+  document.getElementById('modal-overlay').classList.add('open');
+
+  const labels = { acquirente:'Acquirente', proprietario:'Proprietario', immobile:'Immobile', attivita:'Attività' };
+  document.getElementById('modal-title').textContent = (id ? 'Modifica ' : 'Nuovo ') + labels[tipo];
+
+  let data = {};
+  if(id) {
+    if(tipo==='acquirente') data = db.acquirenti.find(p=>p.id===id)||{};
+    else if(tipo==='proprietario') data = db.proprietari.find(p=>p.id===id)||{};
+    else if(tipo==='immobile') data = db.immobili.find(i=>i.id===id)||{};
+  }
+
+  let html = '';
+  if(tipo==='acquirente' || tipo==='proprietario') {
+    html = `
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Nome</label><input class="form-control" id="f-nome" value="${data.nome||''}"></div>
+        <div class="form-group"><label class="form-label">Cognome</label><input class="form-control" id="f-cognome" value="${data.cognome||''}"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Email</label><input class="form-control" id="f-email" type="email" value="${data.email||''}"></div>
+        <div class="form-group"><label class="form-label">Telefono</label><input class="form-control" id="f-telefono" value="${data.telefono||''}"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Città</label><input class="form-control" id="f-citta" value="${data.citta||''}"></div>
+      ${tipo==='acquirente' ? `<div class="form-group"><label class="form-label">Budget (€)</label><input class="form-control" id="f-budget" value="${data.budget||''}"></div>` : ''}
+      <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note" rows="3">${data.note||''}</textarea></div>
+      <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="savePersona()">💾 ${id?'Salva Modifiche':'Aggiungi'}</button>`;
+  }
+  else if(tipo==='immobile') {
+    const propOpts = db.proprietari.map(p => `<option value="${p.id}" ${data.proprietarioId===p.id?'selected':''}>${p.nome} ${p.cognome}</option>`).join('');
+    const acqOpts = '<option value="">-- nessuno --</option>' + db.acquirenti.map(a => `<option value="${a.id}" ${data.acquirenteId===a.id?'selected':''}>${a.nome} ${a.cognome}</option>`).join('');
+    html = `
+      <div class="form-group"><label class="form-label">Titolo</label><input class="form-control" id="f-titolo" value="${data.titolo||''}"></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Tipo</label>
+          <select class="form-control" id="f-tipo">
+            ${['Appartamento','Villa','Ufficio','Negozio','Terreno'].map(t=>`<option ${data.tipo===t?'selected':''}>${t}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Stato</label>
+          <select class="form-control" id="f-stato">
+            ${['disponibile','trattativa','venduto'].map(s=>`<option ${data.stato===s?'selected':''}>${s}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">Contratto</label>
+        <select class="form-control" id="f-contratto">
+          ${['vendita','locazione','affitto'].map(c=>`<option value="${c}" ${data.contratto===c?'selected':''}>${c.charAt(0).toUpperCase()+c.slice(1)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Indirizzo</label><input class="form-control" id="f-indirizzo" value="${data.indirizzo||''}"></div>
+      <div class="form-group"><label class="form-label">Città</label><input class="form-control" id="f-citta" value="${data.citta||''}"></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Prezzo (€)</label><input class="form-control" id="f-prezzo" value="${data.prezzo||''}"></div>
+        <div class="form-group"><label class="form-label">Mq</label><input class="form-control" id="f-mq" type="number" value="${data.mq||''}"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Locali</label><input class="form-control" id="f-locali" type="number" value="${data.locali||''}"></div>
+      <div class="form-group"><label class="form-label">Proprietario</label><select class="form-control" id="f-proprietario">${propOpts}</select></div>
+      <div class="form-group"><label class="form-label">Acquirente (opzionale)</label><select class="form-control" id="f-acquirente">${acqOpts}</select></div>
+      <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="saveImmobile()">💾 ${id?'Salva Modifiche':'Aggiungi'}</button>`;
+  }
+  else if(tipo==='attivita') {
+    const persAcqOpts = db.acquirenti.map(p=>`<option value="${p.id}">${p.nome} ${p.cognome}</option>`).join('');
+    const persPropOpts = db.proprietari.map(p=>`<option value="${p.id}">${p.nome} ${p.cognome}</option>`).join('');
+    const today = new Date().toISOString().split('T')[0];
+    html = `
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Tipo</label>
+          <select class="form-control" id="f-tipo-att" onchange="toggleAttFields()">
+            <option value="telefonata">📞 Telefonata</option>
+            <option value="email">✉️ Email</option>
+            <option value="appuntamento">📅 Appuntamento</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Data</label><input type="date" class="form-control" id="f-data" value="${today}"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Ora</label><input type="time" class="form-control" id="f-ora" value="09:00"></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Tipo Persona</label>
+          <select class="form-control" id="f-persona-tipo" onchange="switchPersoneOpts()">
+            <option value="acquirente" ${prePersonaTipo==='acquirente'?'selected':''}>Acquirente</option>
+            <option value="proprietario" ${prePersonaTipo==='proprietario'?'selected':''}>Proprietario</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Persona</label>
+          <select class="form-control" id="f-persona-id">
+            ${document.getElementById('f-persona-tipo') && document.getElementById('f-persona-tipo').value === 'proprietario' ? persPropOpts : persAcqOpts}
+          </select>
+        </div>
+      </div>
+      <div id="f-extra-durata" class="form-group"><label class="form-label">Durata</label><input class="form-control" id="f-durata" placeholder="es. 15 min"></div>
+      <div id="f-extra-oggetto" class="form-group" style="display:none"><label class="form-label">Oggetto Email</label><input class="form-control" id="f-oggetto"></div>
+      <div id="f-extra-luogo" class="form-group" style="display:none"><label class="form-label">Luogo Appuntamento</label><input class="form-control" id="f-luogo"></div>
+      <div class="form-group"><label class="form-label">Immobile di riferimento</label>
+        <select class="form-control" id="f-immobile-id">
+          <option value="">-- nessuno --</option>
+          ${db.immobili.map(i=>`<option value="${i.id}">${i.titolo}${i.contratto?' ('+i.contratto+')':''}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note" rows="3"></textarea></div>
+      <div id="gcal-note" style="display:none;background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.3);border-radius:8px;padding:10px;margin-bottom:14px;font-size:12px;color:#60a5fa">
+        📅 L'appuntamento verrà salvato e potrai aggiungerlo a Google Calendar dopo
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="saveAttivita()">💾 Aggiungi Attività</button>`;
+  }
+
+  document.getElementById('modal-body').innerHTML = html;
+
+  if(tipo==='attivita') {
+    if(prePersonaTipo) document.getElementById('f-persona-tipo').value = prePersonaTipo;
+    if(prePersonaId) {
+      switchPersoneOpts();
+      document.getElementById('f-persona-id').value = prePersonaId;
+    } else { switchPersoneOpts(); }
+  }
+}
+
+function switchPersoneOpts() {
+  const tipo = document.getElementById('f-persona-tipo').value;
+  const arr = tipo === 'acquirente' ? db.acquirenti : db.proprietari;
+  document.getElementById('f-persona-id').innerHTML = arr.map(p=>`<option value="${p.id}">${p.nome} ${p.cognome}</option>`).join('');
+}
+
+function toggleAttFields() {
+  const tipo = document.getElementById('f-tipo-att').value;
+  document.getElementById('f-extra-durata').style.display = tipo==='telefonata' ? 'block' : 'none';
+  document.getElementById('f-extra-oggetto').style.display = tipo==='email' ? 'block' : 'none';
+  document.getElementById('f-extra-luogo').style.display = tipo==='appuntamento' ? 'block' : 'none';
+  document.getElementById('gcal-note').style.display = (tipo==='appuntamento' && gCalConnected) ? 'block' : 'none';
+}
+
+function closeModal(e) {
+  if(e && e.target !== document.getElementById('modal-overlay')) return;
+  document.getElementById('modal-overlay').classList.remove('open');
+  currentModal = null; editingId = null;
+}
+
+function g(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+
+function savePersona() {
+  const tipo = currentModal;
+  const arr = tipo==='acquirente' ? 'acquirenti' : 'proprietari';
+  const obj = {
+    nome: g('f-nome'), cognome: g('f-cognome'), email: g('f-email'),
+    telefono: g('f-telefono'), citta: g('f-citta'), note: g('f-note'),
+  };
+  if(tipo==='acquirente') obj.budget = g('f-budget');
+  if(editingId) { db[arr] = db[arr].map(p => p.id===editingId ? {...p,...obj} : p); }
+  else { obj.id = nextId(db[arr]); db[arr].push(obj); }
+  saveDb();
+  document.getElementById('modal-overlay').classList.remove('open');
+  renderPersone(arr);
+  toast(editingId ? 'Modifiche salvate' : 'Contatto aggiunto!');
+}
+
+function saveImmobile() {
+  const obj = {
+    titolo: g('f-titolo'), tipo: g('f-tipo'), stato: g('f-stato'),
+    contratto: g('f-contratto'),
+    indirizzo: g('f-indirizzo'), citta: g('f-citta'), prezzo: g('f-prezzo'),
+    mq: parseInt(g('f-mq'))||0, locali: parseInt(g('f-locali'))||0,
+    proprietarioId: parseInt(g('f-proprietario'))||null,
+    acquirenteId: parseInt(g('f-acquirente'))||null,
+  };
+  if(editingId) { db.immobili = db.immobili.map(i => i.id===editingId ? {...i,...obj} : i); }
+  else { obj.id = nextId(db.immobili); db.immobili.push(obj); }
+  saveDb();
+  document.getElementById('modal-overlay').classList.remove('open');
+  renderImmobili();
+  toast(editingId ? 'Modifiche salvate' : 'Immobile aggiunto!');
+}
+
+function saveAttivita() {
+  const obj = {
+    id: nextId(db.attivita),
+    tipo: g('f-tipo-att'),
+    data: g('f-data'),
+    ora: g('f-ora'),
+    personaTipo: g('f-persona-tipo'),
+    personaId: parseInt(g('f-persona-id'))||null,
+    immobileId: parseInt(g('f-immobile-id'))||null,
+    note: g('f-note'),
+    durata: g('f-durata'),
+    oggetto: g('f-oggetto'),
+    luogo: g('f-luogo'),
+  };
+  db.attivita.push(obj);
+  saveDb();
+  document.getElementById('modal-overlay').classList.remove('open');
+  renderAttivita();
+  toast('Attività aggiunta!');
+
+  if(obj.tipo==='appuntamento' && gCalConnected) {
+    setTimeout(() => {
+      if(confirm('Vuoi aggiungere questo appuntamento a Google Calendar?')) {
+        addToGoogleCalendar(obj);
+      }
+    }, 500);
+  }
+}
+
+// ─────────────────────────────────────────────
+//  INIT
+// ─────────────────────────────────────────────
+// Precompila le credenziali se non già salvate
+if (!localStorage.getItem('gcal_client_id')) {
+  localStorage.setItem('gcal_client_id', '343575347292-49fpao8vnqqli1aht3co9pr0bpordmoc.apps.googleusercontent.com');
+}
+if (!localStorage.getItem('gcal_email')) {
+  localStorage.setItem('gcal_email', 'marcoalpedretti@gmail.com');
+}
+CLIENT_ID = localStorage.getItem('gcal_client_id');
+GCAL_EMAIL = localStorage.getItem('gcal_email');
+
+checkGCalCallback(); // Legge il token se siamo tornati dal redirect Google
+renderDashboard();
+if(CLIENT_ID) {
+  const inp = document.getElementById('client-id-input');
+  if(inp) inp.value = CLIENT_ID;
+}
+if(GCAL_EMAIL) {
+  const emailInp = document.getElementById('gcal-email-input');
+  if(emailInp) emailInp.value = GCAL_EMAIL;
+}
+</script>
+</body>
+</html>
