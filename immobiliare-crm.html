@@ -5,6 +5,38 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Immobilia CRM</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script type="module">
+// ─────────────────────────────────────────────
+//  FIREBASE INIT
+// ─────────────────────────────────────────────
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAGnWQOKrHPhtKdAjZ_TAmaMnwb5QOOaxE",
+  authDomain: "immobiliare-crm.firebaseapp.com",
+  projectId: "immobiliare-crm",
+  storageBucket: "immobiliare-crm.firebasestorage.app",
+  messagingSenderId: "343575347292",
+  appId: "1:343575347292:web:e9b5553c1c055fc838a699"
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+const firestore = getFirestore(firebaseApp);
+const DB_DOC = doc(firestore, 'crm', 'dati');
+
+// Rendi disponibili globalmente
+window._firestore = firestore;
+window._dbDoc = DB_DOC;
+window._setDoc = setDoc;
+window._onSnapshot = onSnapshot;
+window._firebaseReady = true;
+
+// Avvia listener in tempo reale appena Firebase è pronto
+window.addEventListener('load', () => {
+  if(window._startFirebaseSync) window._startFirebaseSync();
+});
+</script>
 <style>
   :root {
     --bg: #0a0a0f;
@@ -174,6 +206,33 @@
   }
   #config-panel.open { display: block; }
 
+  /* CARD ACTIONS DROPDOWN */
+  .actions-wrap { position: relative; }
+  .actions-toggle { background: none; border: 1px solid var(--border) !important; color: var(--muted); border-radius: 8px; padding: 4px 10px; cursor: pointer; font-size: 13px; font-family: 'DM Sans', sans-serif; }
+  .actions-toggle:hover { border-color: var(--accent) !important; color: var(--accent); }
+  .actions-dropdown {
+    display: none; position: absolute; right: 0; top: 110%; background: var(--card);
+    border: 1px solid var(--border); border-radius: 10px; padding: 6px; z-index: 50;
+    min-width: 130px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+  .actions-dropdown.open { display: block; }
+  .actions-dropdown button { display: flex; align-items: center; gap: 8px; width: 100%; background: none; border: none; color: var(--text); padding: 8px 12px; cursor: pointer; font-size: 13px; font-family: 'DM Sans', sans-serif; border-radius: 6px; }
+  .actions-dropdown button:hover { background: rgba(255,255,255,0.06); }
+  .actions-dropdown button.del { color: var(--red); }
+  .actions-dropdown button.edit { color: var(--accent); }
+  .actions-dropdown button.gcal { color: var(--blue); }
+
+  /* CALENDARIO */
+  .cal-grid { display: grid; grid-template-columns: 60px repeat(7, 1fr); gap: 1px; background: var(--border); border-radius: 12px; overflow: hidden; }
+  .cal-header { background: var(--card); padding: 10px 6px; text-align: center; font-size: 12px; font-weight: 600; }
+  .cal-header.today { color: var(--accent); }
+  .cal-time { background: var(--card); padding: 8px 6px; text-align: right; font-size: 11px; color: var(--muted); min-height: 48px; }
+  .cal-cell { background: var(--card); min-height: 48px; padding: 2px; position: relative; }
+  .cal-cell.today-col { background: rgba(200,169,110,0.05); }
+  .cal-event { border-radius: 4px; padding: 2px 5px; font-size: 11px; margin-bottom: 2px; cursor: pointer; line-height: 1.3; }
+  .cal-event:hover { opacity: 0.85; }
+  @media (max-width: 768px) { .cal-grid { grid-template-columns: 40px repeat(7, 1fr); } .cal-event { font-size: 10px; } }
+
   /* PAGE */
   .page { display: none; }
   .page.active { display: block; }
@@ -199,8 +258,10 @@
   <button class="nav-btn active" onclick="showPage('dashboard')">◈ &nbsp;Dashboard</button>
   <button class="nav-btn" onclick="showPage('acquirenti')">👥 &nbsp;Acquirenti</button>
   <button class="nav-btn" onclick="showPage('proprietari')">🏠 &nbsp;Proprietari</button>
+  <button class="nav-btn" onclick="showPage('altri')">👤 &nbsp;Altri</button>
   <button class="nav-btn" onclick="showPage('immobili')">🏢 &nbsp;Immobili</button>
   <button class="nav-btn" onclick="showPage('attivita')">📋 &nbsp;Attività</button>
+  <button class="nav-btn" onclick="showPage('calendario')">📅 &nbsp;Calendario</button>
   <div style="margin-top:auto; padding: 0 24px 16px; display:flex; flex-direction:column; gap:8px;">
     <button class="nav-btn" style="padding:10px 0; font-size:12px;" onclick="showPage('impostazioni')">⚙️ &nbsp;Impostazioni</button>
   </div>
@@ -221,7 +282,10 @@
         <div style="font-size:12px;color:var(--muted)" id="gcal-user-text">Connetti per sincronizzare appuntamenti</div>
       </div>
     </div>
-    <button id="gcal-btn" onclick="handleGCalAuth()">🔗 Connetti Google Calendar</button>
+    <div style="display:flex;align-items:center;gap:16px">
+      <span id="sync-status" style="font-size:12px;color:var(--muted)">☁️ Connessione cloud...</span>
+      <button id="gcal-btn" onclick="handleGCalAuth()">🔗 Connetti Google Calendar</button>
+    </div>
   </div>
 
   <!-- DASHBOARD -->
@@ -268,8 +332,28 @@
     <div id="list-immobili"></div>
   </div>
 
-  <!-- ATTIVITÀ -->
-  <div id="page-attivita" class="page">
+  <!-- ALTRI -->
+  <div id="page-altri" class="page">
+    <div class="section-header">
+      <div><h1 class="section-title">Altri Contatti</h1><p class="section-sub" id="altri-count"></p></div>
+      <button class="btn btn-primary" onclick="openModal('altro')">+ Nuovo Contatto</button>
+    </div>
+    <div id="list-altri"></div>
+  </div>
+
+  <!-- CALENDARIO -->
+  <div id="page-calendario" class="page">
+    <div class="section-header">
+      <div><h1 class="section-title">Calendario</h1><p class="section-sub">Visualizzazione settimanale attività</p></div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <button class="btn-sm btn-expand" onclick="changeWeek(-1)" style="padding:6px 14px;font-size:16px">‹</button>
+        <span id="cal-week-label" style="color:var(--accent);font-weight:600;font-size:14px;min-width:180px;text-align:center"></span>
+        <button class="btn-sm btn-expand" onclick="changeWeek(1)" style="padding:6px 14px;font-size:16px">›</button>
+        <button class="btn-sm btn-add-act" onclick="changeWeek(0)" style="padding:6px 14px">Oggi</button>
+      </div>
+    </div>
+    <div id="cal-grid"></div>
+  </div>
     <div class="section-header">
       <div>
         <h1 class="section-title">Attività</h1>
@@ -314,6 +398,24 @@
 
 </div><!-- /main -->
 
+<!-- POPUP DETTAGLIO ATTIVITÀ -->
+<div id="att-popup" style="display:none;position:fixed;z-index:600;pointer-events:none;">
+  <div id="att-popup-box" style="
+    pointer-events:all;
+    background:var(--card);border:1px solid var(--border);border-radius:14px;
+    padding:20px;min-width:260px;max-width:320px;
+    box-shadow:0 12px 40px rgba(0,0,0,0.6);
+    position:relative;
+  ">
+    <button onclick="closeAttivitaPopup()" style="position:absolute;top:10px;right:12px;background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;">✕</button>
+    <div id="att-popup-content"></div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button id="att-popup-edit" class="btn btn-primary" style="flex:1;padding:8px" onclick="">✏️ Modifica</button>
+      <button id="att-popup-del" class="btn" style="flex:1;padding:8px;background:none;border:1px solid var(--red);color:var(--red)" onclick="">🗑 Elimina</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL -->
 <div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
   <div class="modal-box" onclick="event.stopPropagation()">
@@ -341,6 +443,7 @@ let db = {
     { id:1, nome:"Giovanni", cognome:"Ferrari", email:"g.ferrari@email.it", telefono:"328-5556677", citta:"Milano", note:"Disponibile visite il weekend" },
     { id:2, nome:"Anna", cognome:"Conti", email:"anna.conti@email.it", telefono:"366-1122334", citta:"Roma", note:"Vuole vendere entro 6 mesi" },
   ],
+  altri: [],
   immobili: [
     { id:1, titolo:"Trilocale Via Montenapoleone", tipo:"Appartamento", citta:"Milano", indirizzo:"Via Montenapoleone 12", prezzo:"320.000", mq:85, locali:3, proprietarioId:1, acquirenteId:null, stato:"disponibile", contratto:"vendita" },
     { id:2, titolo:"Bilocale Prati", tipo:"Appartamento", citta:"Roma", indirizzo:"Via Cola di Rienzo 45", prezzo:"265.000", mq:60, locali:2, proprietarioId:2, acquirenteId:2, stato:"trattativa", contratto:"locazione" },
@@ -352,9 +455,53 @@ let db = {
   ],
 };
 
-function saveDb() { try { localStorage.setItem('immobilia_db', JSON.stringify(db)); } catch(e){} }
-function loadDb() { try { const s = localStorage.getItem('immobilia_db'); if(s) db = JSON.parse(s); } catch(e){} }
+function saveDb() {
+  // Salva sempre in localStorage come backup locale
+  try { localStorage.setItem('immobilia_db', JSON.stringify(db)); } catch(e){}
+  // Salva su Firestore se disponibile
+  if(window._firebaseReady && window._dbDoc) {
+    window._setDoc(window._dbDoc, db).catch(e => console.warn('Firestore save error:', e));
+  }
+}
+
+function loadDb() {
+  // Carica da localStorage come dati iniziali (poi Firestore sovrascrive in real-time)
+  try { const s = localStorage.getItem('immobilia_db'); if(s) db = JSON.parse(s); } catch(e){}
+}
 loadDb();
+
+// Listener Firestore in tempo reale — aggiorna automaticamente su tutti i dispositivi
+window._startFirebaseSync = function() {
+  if(!window._onSnapshot || !window._dbDoc) return;
+  const statusEl = document.getElementById('sync-status');
+  window._onSnapshot(window._dbDoc, (snap) => {
+    if(snap.exists()) {
+      const remoteDb = snap.data();
+      // Unisci i campi assicurandosi che tutti esistano
+      db.acquirenti = remoteDb.acquirenti || db.acquirenti || [];
+      db.proprietari = remoteDb.proprietari || db.proprietari || [];
+      db.altri = remoteDb.altri || db.altri || [];
+      db.immobili = remoteDb.immobili || db.immobili || [];
+      db.attivita = remoteDb.attivita || db.attivita || [];
+      // Salva in localStorage come backup
+      try { localStorage.setItem('immobilia_db', JSON.stringify(db)); } catch(e){}
+      // Aggiorna UI
+      const activePage = document.querySelector('.page.active');
+      if(activePage) {
+        const name = activePage.id.replace('page-','');
+        renderPage(name);
+      }
+      if(statusEl) { statusEl.textContent = '☁️ Sincronizzato'; statusEl.style.color = 'var(--green)'; }
+    } else {
+      // Prima volta — carica i dati locali su Firestore
+      if(statusEl) { statusEl.textContent = '☁️ Primo accesso, caricamento...'; }
+      saveDb();
+    }
+  }, (err) => {
+    console.warn('Firestore error:', err);
+    if(statusEl) { statusEl.textContent = '⚠️ Offline (dati locali)'; statusEl.style.color = 'var(--orange)'; }
+  });
+};
 
 // ─────────────────────────────────────────────
 //  GOOGLE CALENDAR
@@ -492,8 +639,15 @@ function toggleSidebar() {
 function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('page-' + name).classList.add('active');
-  document.querySelectorAll('.nav-btn').forEach(b => { if(b.textContent.toLowerCase().includes(name) || (name==='impostazioni' && b.textContent.includes('⚙'))) b.classList.add('active'); });
+  const pg = document.getElementById('page-' + name);
+  if(!pg) return;
+  pg.classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    const t = b.textContent.toLowerCase();
+    if(t.includes(name) || (name==='impostazioni' && b.textContent.includes('⚙')) || (name==='calendario' && b.textContent.includes('📅'))) {
+      b.classList.add('active');
+    }
+  });
   renderPage(name);
 }
 
@@ -501,8 +655,10 @@ function renderPage(name) {
   if(name === 'dashboard') renderDashboard();
   else if(name === 'acquirenti') renderPersone('acquirenti');
   else if(name === 'proprietari') renderPersone('proprietari');
+  else if(name === 'altri') renderAltri();
   else if(name === 'immobili') renderImmobili();
   else if(name === 'attivita') renderAttivita();
+  else if(name === 'calendario') renderCalendario();
   else if(name === 'impostazioni') {
     const inp = document.getElementById('client-id-input');
     if(inp && CLIENT_ID) inp.value = CLIENT_ID;
@@ -515,8 +671,10 @@ function renderPage(name) {
 //  HELPERS
 // ─────────────────────────────────────────────
 function getPersona(tipo, id) {
-  const arr = tipo === 'acquirente' ? db.acquirenti : db.proprietari;
-  return arr.find(p => p.id === id);
+  if(tipo === 'acquirente') return db.acquirenti.find(p => p.id === id);
+  if(tipo === 'proprietario') return db.proprietari.find(p => p.id === id);
+  if(tipo === 'altro') return db.altri.find(p => p.id === id);
+  return null;
 }
 function badge(text, color) {
   return `<span class="badge" style="background:${color}22;color:${color};border:1px solid ${color}44">${text}</span>`;
@@ -593,45 +751,292 @@ function personaCard(p, tipo) {
       <span style="color:var(--muted);font-size:12px">${a.data} ${a.ora}</span>
       <span style="font-size:13px">${a.note||''}</span>
       ${immAtt ? `<span style="color:var(--accent);font-size:12px">🏢 ${immAtt.titolo}</span>` : ''}
-      ${gCalConnected && a.tipo==='appuntamento' ? `<button class="btn-sm btn-gcal" onclick="addToGoogleCalendar(${JSON.stringify(a).replace(/"/g,'&quot;')})">📅 Aggiungi a GCal</button>` : ''}
+      ${gCalConnected && a.tipo==='appuntamento' ? `<button class="btn-sm btn-gcal" onclick="addToGoogleCalendar(${JSON.stringify(a).replace(/"/g,'&quot;')})">📅 GCal</button>` : ''}
     </div>`;
   }).join('');
 
-  return `<div class="card" id="card-${tipo}-${p.id}">
+  const uid = `${tipo}-${p.id}`;
+  return `<div class="card" id="card-${uid}">
     <div class="card-header">
       <div>
         <div class="card-name">${p.nome} ${p.cognome}</div>
         <div class="card-sub">📍 ${p.citta||''} &nbsp;•&nbsp; 📞 ${p.telefono||''}</div>
         <div class="card-sub">✉️ ${p.email||''}</div>
         ${p.budget ? `<div style="color:var(--accent);font-size:13px;margin-top:4px">💰 Budget: €${p.budget}</div>` : ''}
+        ${p.ruolo ? `<div style="color:var(--blue);font-size:12px;margin-top:2px">🏷️ ${p.ruolo}</div>` : ''}
       </div>
-      <div class="card-actions">
+      <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
         ${badge(mieAtt.length + ' attività', mieAtt.length>0?'#4ade80':'#6b6b8a')}
-        <button class="btn-sm btn-expand" onclick="toggleExpand('${tipo}',${p.id})">▼</button>
-        <button class="btn-sm btn-edit" onclick="openModal('${tipo}', ${p.id})">✏️</button>
-        <button class="btn-sm btn-del" onclick="deletePersona('${tipo}', ${p.id})">🗑</button>
+        <button class="btn-sm btn-expand" onclick="toggleExpand('${uid}')">▼</button>
+        <div class="actions-wrap">
+          <button class="actions-toggle" onclick="toggleDropdown('dd-${uid}')">⋯</button>
+          <div class="actions-dropdown" id="dd-${uid}">
+            <button class="edit" onclick="closeDropdown('dd-${uid}');openModal('${tipo}', ${p.id})">✏️ Modifica</button>
+            <button onclick="closeDropdown('dd-${uid}');openModal('attivita', null, '${tipo}', ${p.id})">➕ Attività</button>
+            <button class="del" onclick="closeDropdown('dd-${uid}');deletePersona('${tipo}', ${p.id})">🗑 Elimina</button>
+          </div>
+        </div>
       </div>
     </div>
     ${p.note ? `<div class="card-note">"${p.note}"</div>` : ''}
-    <div class="card-expand" id="expand-${tipo}-${p.id}" style="display:none">
+    <div class="card-expand" id="expand-${uid}" style="display:none">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
         <span style="color:var(--accent);font-size:13px;font-weight:600">STORICO ATTIVITÀ</span>
-        <button class="btn-sm btn-add-act" onclick="openModal('attivita', null, '${tipo}', ${p.id})">+ Aggiungi</button>
       </div>
       ${attHtml || '<span style="color:var(--muted);font-size:13px">Nessuna attività</span>'}
     </div>
   </div>`;
 }
 
-function toggleExpand(tipo, id) {
-  const el = document.getElementById(`expand-${tipo}-${id}`);
+function toggleExpand(uid) {
+  const el = document.getElementById(`expand-${uid}`);
   el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
 
+function toggleDropdown(id) {
+  document.querySelectorAll('.actions-dropdown.open').forEach(d => { if(d.id !== id) d.classList.remove('open'); });
+  document.getElementById(id).classList.toggle('open');
+}
+function closeDropdown(id) { const el = document.getElementById(id); if(el) el.classList.remove('open'); }
+document.addEventListener('click', e => {
+  // Chiudi dropdown azioni
+  if(!e.target.closest('.actions-wrap')) document.querySelectorAll('.actions-dropdown.open').forEach(d => d.classList.remove('open'));
+  // Chiudi popup attività
+  const popup = document.getElementById('att-popup');
+  if(popup && popup.style.display !== 'none' && !e.target.closest('#att-popup-box') && !e.target.closest('.cal-event')) {
+    closeAttivitaPopup();
+  }
+});
+
 function deletePersona(tipo, id) {
-  const arr = tipo === 'acquirente' ? 'acquirenti' : 'proprietari';
+  const arr = tipo === 'acquirente' ? 'acquirenti' : tipo === 'proprietario' ? 'proprietari' : 'altri';
   db[arr] = db[arr].filter(p => p.id !== id);
-  saveDb(); renderPersone(arr); toast('Contatto eliminato');
+  saveDb();
+  if(tipo==='altro') renderAltri(); else renderPersone(arr);
+  toast('Contatto eliminato');
+}
+
+// ─────────────────────────────────────────────
+//  RENDER ALTRI
+// ─────────────────────────────────────────────
+function renderAltri() {
+  document.getElementById('altri-count').textContent = db.altri.length + ' contatti registrati';
+  document.getElementById('list-altri').innerHTML = db.altri.length
+    ? db.altri.map(p => personaCard(p, 'altro')).join('')
+    : '<span style="color:var(--muted);font-size:14px">Nessun contatto. Aggiungi il primo!</span>';
+}
+
+// ─────────────────────────────────────────────
+//  CALENDARIO SETTIMANALE
+// ─────────────────────────────────────────────
+let calWeekOffset = 0;
+
+function changeWeek(dir) {
+  if(dir === 0) calWeekOffset = 0;
+  else calWeekOffset += dir;
+  renderCalendario();
+}
+
+function getWeekDays(offset) {
+  const today = new Date();
+  const dow = today.getDay() === 0 ? 6 : today.getDay() - 1; // lunedì=0
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - dow + offset * 7);
+  monday.setHours(0,0,0,0);
+  return Array.from({length:7}, (_, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    return d;
+  });
+}
+
+// Usa ora locale (non UTC) per evitare sfasamento di fuso orario
+function fmtDate(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const g = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${g}`;
+}
+
+function renderCalendario() {
+  const days = getWeekDays(calWeekOffset);
+  const todayStr = fmtDate(new Date());
+  const dayNames = ['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
+  const hours = Array.from({length:24}, (_,i) => i);
+
+  const opts = { day:'numeric', month:'long' };
+  document.getElementById('cal-week-label').textContent =
+    `${days[0].toLocaleDateString('it-IT', opts)} – ${days[6].toLocaleDateString('it-IT', opts)}`;
+
+  // Mostra TUTTE le attività — anche passate — nella settimana visualizzata
+  const attByDay = {};
+  days.forEach(d => { attByDay[fmtDate(d)] = {}; });
+  db.attivita.forEach(a => {
+    if(!attByDay[a.data]) return;
+    const h = a.ora ? parseInt(a.ora.split(':')[0]) : 9;
+    if(!attByDay[a.data][h]) attByDay[a.data][h] = [];
+    attByDay[a.data][h].push(a);
+  });
+
+  let html = '<div class="cal-grid">';
+  html += '<div class="cal-header" style="background:var(--bg)"></div>';
+  days.forEach((d,i) => {
+    const isToday = fmtDate(d) === todayStr;
+    html += `<div class="cal-header${isToday?' today':''}">${dayNames[i]}<br><span style="font-size:16px;font-weight:700">${d.getDate()}</span></div>`;
+  });
+
+  hours.forEach(h => {
+    html += `<div class="cal-time">${String(h).padStart(2,'0')}:00</div>`;
+    days.forEach(d => {
+      const ds = fmtDate(d);
+      const isToday = ds === todayStr;
+      const events = (attByDay[ds]||{})[h] || [];
+      const evHtml = events.map(a => {
+        const p = getPersona(a.personaTipo, a.personaId);
+        const col = tipoColor(a.tipo);
+        const icon = a.tipo==='telefonata'?'📞':a.tipo==='email'?'✉️':'📅';
+        return `<div class="cal-event" style="background:${col}22;border-left:3px solid ${col};color:${col};cursor:pointer" 
+          onclick="showAttivitaPopup(${a.id}, event)">
+          ${icon} ${p ? p.nome : ''}<br>
+          <span style="color:var(--text);font-size:10px">${a.ora||''} ${(a.note||'').slice(0,20)}</span>
+        </div>`;
+      }).join('');
+      html += `<div class="cal-cell${isToday?' today-col':''}">${evHtml}</div>`;
+    });
+  });
+
+  html += '</div>';
+  document.getElementById('cal-grid').innerHTML = html;
+}
+
+function showAttivitaPopup(id, evt) {
+  evt.stopPropagation();
+  const a = db.attivita.find(x => x.id === id);
+  if(!a) return;
+  const p = getPersona(a.personaTipo, a.personaId);
+  const imm = db.immobili.find(i => i.id === a.immobileId);
+  const col = tipoColor(a.tipo);
+  const icon = a.tipo==='telefonata'?'📞':a.tipo==='email'?'✉️':'📅';
+  const tipoLabel = a.tipo.charAt(0).toUpperCase()+a.tipo.slice(1);
+
+  let html = `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+      <span style="font-size:22px">${icon}</span>
+      <div>
+        <div style="font-family:'Playfair Display',serif;font-size:15px;font-weight:600;color:${col}">${tipoLabel}</div>
+        <div style="color:var(--muted);font-size:12px">${a.data}${a.ora?' · '+a.ora:''}</div>
+      </div>
+    </div>`;
+
+  if(p) html += `<div style="margin-bottom:8px;font-size:13px">
+    <span style="color:var(--muted)">${a.personaTipo==='acquirente'?'👥':a.personaTipo==='proprietario'?'🏠':'👤'} </span>
+    <strong>${p.nome} ${p.cognome}</strong>
+    ${p.ruolo?`<span style="color:var(--muted);font-size:11px"> · ${p.ruolo}</span>`:''}
+  </div>`;
+
+  if(imm) html += `<div style="margin-bottom:8px;font-size:13px;color:var(--accent)">🏢 ${imm.titolo}${imm.contratto?' · '+imm.contratto:''}</div>`;
+
+  if(a.note) html += `<div style="margin-bottom:6px;font-size:13px;color:var(--text)">📝 ${a.note}</div>`;
+  if(a.oggetto) html += `<div style="margin-bottom:6px;font-size:12px;color:#60a5fa">✉️ Oggetto: ${a.oggetto}</div>`;
+  if(a.luogo) html += `<div style="margin-bottom:6px;font-size:12px;color:#4ade80">📍 ${a.luogo}</div>`;
+  if(a.durata) html += `<div style="margin-bottom:6px;font-size:12px;color:var(--muted)">⏱ Durata: ${a.durata}</div>`;
+
+  if(gCalConnected && a.tipo==='appuntamento') {
+    html += `<button class="btn-sm btn-gcal" style="margin-top:4px;width:100%" onclick="closeAttivitaPopup();addToGoogleCalendar(${JSON.stringify(a).replace(/"/g,'&quot;')})">📅 Aggiungi a Google Calendar</button>`;
+  }
+
+  document.getElementById('att-popup-content').innerHTML = html;
+  document.getElementById('att-popup-edit').onclick = () => { closeAttivitaPopup(); editAttivita(id); };
+  document.getElementById('att-popup-del').onclick = () => { closeAttivitaPopup(); deleteAttivita(id); };
+
+  // Posiziona il popup vicino al click, evitando che esca dallo schermo
+  const popup = document.getElementById('att-popup');
+  popup.style.display = 'block';
+  const box = document.getElementById('att-popup-box');
+  const vw = window.innerWidth, vh = window.innerHeight;
+  let x = evt.clientX + 10, y = evt.clientY + 10;
+  // Aggiusta se esce a destra o in basso
+  setTimeout(() => {
+    const bw = box.offsetWidth, bh = box.offsetHeight;
+    if(x + bw > vw - 10) x = evt.clientX - bw - 10;
+    if(y + bh > vh - 10) y = evt.clientY - bh - 10;
+    popup.style.left = Math.max(8, x) + 'px';
+    popup.style.top = Math.max(8, y) + 'px';
+  }, 0);
+}
+
+function closeAttivitaPopup() {
+  document.getElementById('att-popup').style.display = 'none';
+}
+
+function editAttivita(id) {
+  const a = db.attivita.find(x => x.id === id);
+  if(!a) return;
+  currentModal = 'attivita';
+  editingId = id;
+  document.getElementById('modal-overlay').classList.add('open');
+  document.getElementById('modal-title').textContent = 'Modifica Attività';
+
+  const persAcqOpts = db.acquirenti.map(p=>`<option value="${p.id}">${p.nome} ${p.cognome}</option>`).join('');
+  const persPropOpts = db.proprietari.map(p=>`<option value="${p.id}">${p.nome} ${p.cognome}</option>`).join('');
+  const persAltriOpts = db.altri.map(p=>`<option value="${p.id}">${p.nome} ${p.cognome}${p.ruolo?' ('+p.ruolo+')':''}</option>`).join('');
+
+  const html = `
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Tipo</label>
+        <select class="form-control" id="f-tipo-att" onchange="toggleAttFields()">
+          <option value="telefonata" ${a.tipo==='telefonata'?'selected':''}>📞 Telefonata</option>
+          <option value="email" ${a.tipo==='email'?'selected':''}>✉️ Email</option>
+          <option value="appuntamento" ${a.tipo==='appuntamento'?'selected':''}>📅 Appuntamento</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Data</label>
+        <input type="date" class="form-control" id="f-data" value="${a.data||''}">
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Ora</label>
+      <input type="time" class="form-control" id="f-ora" value="${a.ora||'09:00'}">
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Tipo Persona</label>
+        <select class="form-control" id="f-persona-tipo" onchange="switchPersoneOpts()">
+          <option value="acquirente" ${a.personaTipo==='acquirente'?'selected':''}>Acquirente</option>
+          <option value="proprietario" ${a.personaTipo==='proprietario'?'selected':''}>Proprietario</option>
+          <option value="altro" ${a.personaTipo==='altro'?'selected':''}>Altro Contatto</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Persona</label>
+        <select class="form-control" id="f-persona-id">
+          ${a.personaTipo==='proprietario' ? persPropOpts : a.personaTipo==='altro' ? persAltriOpts : persAcqOpts}
+        </select>
+      </div>
+    </div>
+    <div id="f-extra-durata" class="form-group" style="${a.tipo==='telefonata'?'':'display:none'}">
+      <label class="form-label">Durata</label><input class="form-control" id="f-durata" value="${a.durata||''}">
+    </div>
+    <div id="f-extra-oggetto" class="form-group" style="${a.tipo==='email'?'':'display:none'}">
+      <label class="form-label">Oggetto Email</label><input class="form-control" id="f-oggetto" value="${a.oggetto||''}">
+    </div>
+    <div id="f-extra-luogo" class="form-group" style="${a.tipo==='appuntamento'?'':'display:none'}">
+      <label class="form-label">Luogo</label><input class="form-control" id="f-luogo" value="${a.luogo||''}">
+    </div>
+    <div class="form-group"><label class="form-label">Immobile di riferimento</label>
+      <select class="form-control" id="f-immobile-id">
+        <option value="">-- nessuno --</option>
+        ${db.immobili.map(i=>`<option value="${i.id}" ${a.immobileId===i.id?'selected':''}>${i.titolo}${i.contratto?' ('+i.contratto+')':''}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">Note</label>
+      <textarea class="form-control" id="f-note" rows="3">${a.note||''}</textarea>
+    </div>
+    <div id="gcal-note" style="display:none;background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.3);border-radius:8px;padding:10px;margin-bottom:14px;font-size:12px;color:#60a5fa">
+      📅 Potrai aggiornarlo su Google Calendar dopo il salvataggio
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="saveAttivita()">💾 Salva Modifiche</button>`;
+
+  document.getElementById('modal-body').innerHTML = html;
+  document.getElementById('f-persona-id').value = a.personaId;
+  if(gCalConnected && a.tipo==='appuntamento') document.getElementById('gcal-note').style.display='block';
 }
 
 // ─────────────────────────────────────────────
@@ -659,9 +1064,12 @@ function renderImmobili() {
             ${acq ? `<span style="color:var(--muted);font-size:12px">🤝 Acquirente: <span style="color:#4ade80">${acq.nome} ${acq.cognome}</span></span>` : ''}
           </div>
         </div>
-        <div class="card-actions">
-          <button class="btn-sm btn-edit" onclick="openModal('immobile', ${i.id})">✏️</button>
-          <button class="btn-sm btn-del" onclick="deleteImmobile(${i.id})">🗑</button>
+        <div class="actions-wrap">
+          <button class="actions-toggle" onclick="toggleDropdown('dd-imm-${i.id}')">⋯</button>
+          <div class="actions-dropdown" id="dd-imm-${i.id}">
+            <button class="edit" onclick="closeDropdown('dd-imm-${i.id}');openModal('immobile', ${i.id})">✏️ Modifica</button>
+            <button class="del" onclick="closeDropdown('dd-imm-${i.id}');deleteImmobile(${i.id})">🗑 Elimina</button>
+          </div>
         </div>
       </div>
     </div>`;
@@ -709,7 +1117,14 @@ function renderAttivita() {
           </div>
           <div style="display:flex;gap:8px;align-items:center">
             ${gcalBtn}
-            <button class="btn-sm btn-del" onclick="deleteAttivita(${a.id})">🗑</button>
+            <div class="actions-wrap">
+              <button class="actions-toggle" onclick="toggleDropdown('dd-att-${a.id}')">⋯</button>
+              <div class="actions-dropdown" id="dd-att-${a.id}">
+                <button class="edit" onclick="closeDropdown('dd-att-${a.id}');editAttivita(${a.id})">✏️ Modifica</button>
+                ${gCalConnected && tipo==='appuntamento' ? `<button class="gcal" onclick="closeDropdown('dd-att-${a.id}');addToGoogleCalendar(${JSON.stringify(a).replace(/"/g,'&quot;')})">📅 Aggiungi a GCal</button>` : ''}
+                <button class="del" onclick="closeDropdown('dd-att-${a.id}');deleteAttivita(${a.id})">🗑 Elimina</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>`;
@@ -737,18 +1152,19 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
   currentModal = tipo; editingId = id;
   document.getElementById('modal-overlay').classList.add('open');
 
-  const labels = { acquirente:'Acquirente', proprietario:'Proprietario', immobile:'Immobile', attivita:'Attività' };
+  const labels = { acquirente:'Acquirente', proprietario:'Proprietario', altro:'Altro Contatto', immobile:'Immobile', attivita:'Attività' };
   document.getElementById('modal-title').textContent = (id ? 'Modifica ' : 'Nuovo ') + labels[tipo];
 
   let data = {};
   if(id) {
     if(tipo==='acquirente') data = db.acquirenti.find(p=>p.id===id)||{};
     else if(tipo==='proprietario') data = db.proprietari.find(p=>p.id===id)||{};
+    else if(tipo==='altro') data = db.altri.find(p=>p.id===id)||{};
     else if(tipo==='immobile') data = db.immobili.find(i=>i.id===id)||{};
   }
 
   let html = '';
-  if(tipo==='acquirente' || tipo==='proprietario') {
+  if(tipo==='acquirente' || tipo==='proprietario' || tipo==='altro') {
     html = `
       <div class="form-row">
         <div class="form-group"><label class="form-label">Nome</label><input class="form-control" id="f-nome" value="${data.nome||''}"></div>
@@ -760,6 +1176,7 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
       </div>
       <div class="form-group"><label class="form-label">Città</label><input class="form-control" id="f-citta" value="${data.citta||''}"></div>
       ${tipo==='acquirente' ? `<div class="form-group"><label class="form-label">Budget (€)</label><input class="form-control" id="f-budget" value="${data.budget||''}"></div>` : ''}
+      ${tipo==='altro' ? `<div class="form-group"><label class="form-label">Ruolo / Categoria</label><input class="form-control" id="f-ruolo" placeholder="es. Notaio, Banca, Geometra..." value="${data.ruolo||''}"></div>` : ''}
       <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note" rows="3">${data.note||''}</textarea></div>
       <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="savePersona()">💾 ${id?'Salva Modifiche':'Aggiungi'}</button>`;
   }
@@ -799,7 +1216,8 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
   else if(tipo==='attivita') {
     const persAcqOpts = db.acquirenti.map(p=>`<option value="${p.id}">${p.nome} ${p.cognome}</option>`).join('');
     const persPropOpts = db.proprietari.map(p=>`<option value="${p.id}">${p.nome} ${p.cognome}</option>`).join('');
-    const today = new Date().toISOString().split('T')[0];
+    const _tn = new Date();
+    const today = fmtDate(_tn);
     html = `
       <div class="form-row">
         <div class="form-group"><label class="form-label">Tipo</label>
@@ -817,6 +1235,7 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
           <select class="form-control" id="f-persona-tipo" onchange="switchPersoneOpts()">
             <option value="acquirente" ${prePersonaTipo==='acquirente'?'selected':''}>Acquirente</option>
             <option value="proprietario" ${prePersonaTipo==='proprietario'?'selected':''}>Proprietario</option>
+            <option value="altro" ${prePersonaTipo==='altro'?'selected':''}>Altro Contatto</option>
           </select>
         </div>
         <div class="form-group"><label class="form-label">Persona</label>
@@ -854,8 +1273,8 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
 
 function switchPersoneOpts() {
   const tipo = document.getElementById('f-persona-tipo').value;
-  const arr = tipo === 'acquirente' ? db.acquirenti : db.proprietari;
-  document.getElementById('f-persona-id').innerHTML = arr.map(p=>`<option value="${p.id}">${p.nome} ${p.cognome}</option>`).join('');
+  const arr = tipo === 'acquirente' ? db.acquirenti : tipo === 'proprietario' ? db.proprietari : db.altri;
+  document.getElementById('f-persona-id').innerHTML = arr.map(p=>`<option value="${p.id}">${p.nome} ${p.cognome}${p.ruolo?' ('+p.ruolo+')':''}</option>`).join('');
 }
 
 function toggleAttFields() {
@@ -876,17 +1295,18 @@ function g(id) { const el = document.getElementById(id); return el ? el.value.tr
 
 function savePersona() {
   const tipo = currentModal;
-  const arr = tipo==='acquirente' ? 'acquirenti' : 'proprietari';
+  const arr = tipo==='acquirente' ? 'acquirenti' : tipo==='proprietario' ? 'proprietari' : 'altri';
   const obj = {
     nome: g('f-nome'), cognome: g('f-cognome'), email: g('f-email'),
     telefono: g('f-telefono'), citta: g('f-citta'), note: g('f-note'),
   };
   if(tipo==='acquirente') obj.budget = g('f-budget');
+  if(tipo==='altro') obj.ruolo = g('f-ruolo');
   if(editingId) { db[arr] = db[arr].map(p => p.id===editingId ? {...p,...obj} : p); }
   else { obj.id = nextId(db[arr]); db[arr].push(obj); }
   saveDb();
   document.getElementById('modal-overlay').classList.remove('open');
-  renderPersone(arr);
+  if(tipo==='altro') renderAltri(); else renderPersone(arr);
   toast(editingId ? 'Modifiche salvate' : 'Contatto aggiunto!');
 }
 
@@ -909,7 +1329,6 @@ function saveImmobile() {
 
 function saveAttivita() {
   const obj = {
-    id: nextId(db.attivita),
     tipo: g('f-tipo-att'),
     data: g('f-data'),
     ora: g('f-ora'),
@@ -921,13 +1340,20 @@ function saveAttivita() {
     oggetto: g('f-oggetto'),
     luogo: g('f-luogo'),
   };
-  db.attivita.push(obj);
+  if(editingId) {
+    db.attivita = db.attivita.map(a => a.id===editingId ? {...a,...obj} : a);
+    toast('Attività aggiornata!');
+  } else {
+    obj.id = nextId(db.attivita);
+    db.attivita.push(obj);
+    toast('Attività aggiunta!');
+  }
   saveDb();
   document.getElementById('modal-overlay').classList.remove('open');
   renderAttivita();
-  toast('Attività aggiunta!');
+  if(document.getElementById('page-calendario').classList.contains('active')) renderCalendario();
 
-  if(obj.tipo==='appuntamento' && gCalConnected) {
+  if(!editingId && obj.tipo==='appuntamento' && gCalConnected) {
     setTimeout(() => {
       if(confirm('Vuoi aggiungere questo appuntamento a Google Calendar?')) {
         addToGoogleCalendar(obj);
