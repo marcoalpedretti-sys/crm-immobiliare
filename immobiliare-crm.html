@@ -94,22 +94,6 @@ window.addEventListener('load', () => {
   }
   #main.expanded { margin-left: 0; padding-left: 40px; }
 
-  /* GOOGLE AUTH BAR */
-  #google-bar {
-    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
-    padding: 12px 20px; margin-bottom: 28px; display: flex; align-items: center;
-    justify-content: space-between; gap: 16px;
-  }
-  #google-bar .gcal-info { display: flex; align-items: center; gap: 12px; }
-  #google-bar .gcal-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--red); }
-  #google-bar .gcal-dot.connected { background: var(--green); }
-  #gcal-btn {
-    background: var(--accent); border: none; color: var(--bg); border-radius: 8px;
-    padding: 8px 16px; cursor: pointer; font-weight: 600; font-size: 13px;
-    font-family: 'DM Sans', sans-serif;
-  }
-  #gcal-btn.disconnect { background: none; border: 1px solid var(--red); color: var(--red); }
-
   /* CARDS */
   .card {
     background: var(--card); border: 1px solid var(--border); border-radius: 12px;
@@ -223,15 +207,39 @@ window.addEventListener('load', () => {
   .actions-dropdown button.gcal { color: var(--blue); }
 
   /* CALENDARIO */
-  .cal-grid { display: grid; grid-template-columns: 60px repeat(7, 1fr); gap: 1px; background: var(--border); border-radius: 12px; overflow: hidden; }
+  .cal-grid { display: grid; gap: 1px; background: var(--border); border-radius: 12px; overflow: hidden; }
+  .cal-grid.week { grid-template-columns: 50px repeat(7, 1fr); }
+  .cal-grid.day  { grid-template-columns: 50px 1fr; }
   .cal-header { background: var(--card); padding: 10px 6px; text-align: center; font-size: 12px; font-weight: 600; }
   .cal-header.today { color: var(--accent); }
-  .cal-time { background: var(--card); padding: 8px 6px; text-align: right; font-size: 11px; color: var(--muted); min-height: 48px; }
-  .cal-cell { background: var(--card); min-height: 48px; padding: 2px; position: relative; }
+  .cal-time { background: var(--card); padding: 4px 6px; text-align: right; font-size: 10px; color: var(--muted); min-height: 28px; display:flex; align-items:center; justify-content:flex-end; }
+  .cal-time.half { color: transparent; min-height: 24px; border-top: 1px dashed rgba(255,255,255,0.04); }
+  .cal-cell { background: var(--card); min-height: 28px; padding: 1px 2px; position: relative; }
+  .cal-cell.half { min-height: 24px; border-top: 1px dashed rgba(255,255,255,0.04); }
   .cal-cell.today-col { background: rgba(200,169,110,0.05); }
-  .cal-event { border-radius: 4px; padding: 2px 5px; font-size: 11px; margin-bottom: 2px; cursor: pointer; line-height: 1.3; }
+  .cal-event { border-radius: 4px; padding: 2px 5px; font-size: 11px; margin-bottom: 1px; cursor: pointer; line-height: 1.3; }
   .cal-event:hover { opacity: 0.85; }
-  @media (max-width: 768px) { .cal-grid { grid-template-columns: 40px repeat(7, 1fr); } .cal-event { font-size: 10px; } }
+  .cal-view-toggle { display:flex; gap:6px; }
+  .cal-view-btn { background:none; border:1px solid var(--border); color:var(--muted); border-radius:8px; padding:5px 12px; cursor:pointer; font-size:12px; font-family:'DM Sans',sans-serif; transition:all 0.2s; }
+  .cal-view-btn.active { background:var(--accent); color:var(--bg); border-color:var(--accent); font-weight:600; }
+
+  /* GOOGLE BAR — bottom fixed */
+  #google-bar {
+    position: fixed; bottom: 0; left: var(--sidebar-w); right: 0; z-index: 100;
+    background: var(--card); border-top: 1px solid var(--border);
+    padding: 10px 24px; display: flex; align-items: center;
+    justify-content: space-between; gap: 16px;
+    transition: left 0.3s ease;
+  }
+  #main.expanded ~ #google-bar, body.sidebar-collapsed #google-bar { left: 0; }
+  #google-bar .gcal-info { display: flex; align-items: center; gap: 12px; }
+  #google-bar .gcal-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); flex-shrink:0; }
+  #google-bar .gcal-dot.connected { background: var(--green); }
+  #gcal-btn { background: var(--accent); border: none; color: var(--bg); border-radius: 8px; padding: 6px 14px; cursor: pointer; font-weight: 600; font-size: 12px; font-family: 'DM Sans', sans-serif; white-space:nowrap; }
+  #gcal-btn.disconnect { background: none; border: 1px solid var(--red); color: var(--red); }
+  #main { padding-bottom: 60px; }
+
+  @media (max-width: 768px) { .cal-grid.week { grid-template-columns: 36px repeat(7, 1fr); } .cal-event { font-size: 9px; } #google-bar { left: 0; } }
 
   /* PAGE */
   .page { display: none; }
@@ -259,6 +267,7 @@ window.addEventListener('load', () => {
   <button class="nav-btn" onclick="showPage('acquirenti')">👥 &nbsp;Acquirenti</button>
   <button class="nav-btn" onclick="showPage('proprietari')">🏠 &nbsp;Proprietari</button>
   <button class="nav-btn" onclick="showPage('altri')">👤 &nbsp;Altri</button>
+  <button class="nav-btn" onclick="showPage('richieste')">🔍 &nbsp;Richieste</button>
   <button class="nav-btn" onclick="showPage('immobili')">🏢 &nbsp;Immobili</button>
   <button class="nav-btn" onclick="showPage('attivita')">📋 &nbsp;Attività</button>
   <button class="nav-btn" onclick="showPage('calendario')">📅 &nbsp;Calendario</button>
@@ -272,21 +281,6 @@ window.addEventListener('load', () => {
 
 <!-- MAIN -->
 <div id="main">
-
-  <!-- GOOGLE BAR -->
-  <div id="google-bar">
-    <div class="gcal-info">
-      <div class="gcal-dot" id="gcal-dot"></div>
-      <div>
-        <div style="font-size:14px;font-weight:600" id="gcal-status-text">Google Calendar non connesso</div>
-        <div style="font-size:12px;color:var(--muted)" id="gcal-user-text">Connetti per sincronizzare appuntamenti</div>
-      </div>
-    </div>
-    <div style="display:flex;align-items:center;gap:16px">
-      <span id="sync-status" style="font-size:12px;color:var(--muted)">☁️ Connessione cloud...</span>
-      <button id="gcal-btn" onclick="handleGCalAuth()">🔗 Connetti Google Calendar</button>
-    </div>
-  </div>
 
   <!-- DASHBOARD -->
   <div id="page-dashboard" class="page active">
@@ -341,19 +335,21 @@ window.addEventListener('load', () => {
     <div id="list-altri"></div>
   </div>
 
-  <!-- CALENDARIO -->
-  <div id="page-calendario" class="page">
+  <!-- RICHIESTE -->
+  <div id="page-richieste" class="page">
     <div class="section-header">
-      <div><h1 class="section-title">Calendario</h1><p class="section-sub">Visualizzazione settimanale attività</p></div>
-      <div style="display:flex;gap:10px;align-items:center">
-        <button class="btn-sm btn-expand" onclick="changeWeek(-1)" style="padding:6px 14px;font-size:16px">‹</button>
-        <span id="cal-week-label" style="color:var(--accent);font-weight:600;font-size:14px;min-width:180px;text-align:center"></span>
-        <button class="btn-sm btn-expand" onclick="changeWeek(1)" style="padding:6px 14px;font-size:16px">›</button>
-        <button class="btn-sm btn-add-act" onclick="changeWeek(0)" style="padding:6px 14px">Oggi</button>
+      <div><h1 class="section-title">Richieste</h1><p class="section-sub" id="rich-count"></p></div>
+      <div style="display:flex;gap:10px">
+        <button class="btn-sm btn-gcal" style="padding:8px 14px;font-size:13px" onclick="matchRichieste()">🔍 Incrocia con Immobili</button>
+        <button class="btn btn-primary" onclick="openModal('richiesta')">+ Nuova Richiesta</button>
       </div>
     </div>
-    <div id="cal-grid"></div>
+    <div id="match-results" style="display:none;margin-bottom:24px"></div>
+    <div id="list-richieste"></div>
   </div>
+
+  <!-- ATTIVITÀ -->
+  <div id="page-attivita" class="page">
     <div class="section-header">
       <div>
         <h1 class="section-title">Attività</h1>
@@ -362,6 +358,24 @@ window.addEventListener('load', () => {
       <button class="btn btn-primary" onclick="openModal('attivita')">+ Nuova Attività</button>
     </div>
     <div id="list-attivita"></div>
+  </div>
+
+  <!-- CALENDARIO -->
+  <div id="page-calendario" class="page">
+    <div class="section-header" style="flex-wrap:wrap;gap:12px">
+      <div><h1 class="section-title">Calendario</h1></div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <div class="cal-view-toggle">
+          <button class="cal-view-btn active" id="btn-view-week" onclick="setCalView('week')">Settimana</button>
+          <button class="cal-view-btn" id="btn-view-day" onclick="setCalView('day')">Giorno</button>
+        </div>
+        <button class="btn-sm btn-expand" onclick="changeWeek(-1)" style="padding:6px 14px;font-size:16px">‹</button>
+        <span id="cal-week-label" style="color:var(--accent);font-weight:600;font-size:14px;min-width:160px;text-align:center"></span>
+        <button class="btn-sm btn-expand" onclick="changeWeek(1)" style="padding:6px 14px;font-size:16px">›</button>
+        <button class="btn-sm btn-add-act" onclick="changeWeek(0)" style="padding:6px 14px">Oggi</button>
+      </div>
+    </div>
+    <div id="cal-grid" style="overflow-x:auto"></div>
   </div>
 
   <!-- IMPOSTAZIONI -->
@@ -397,6 +411,21 @@ window.addEventListener('load', () => {
   </div>
 
 </div><!-- /main -->
+
+<!-- GOOGLE BAR — barra fissa in basso -->
+<div id="google-bar">
+  <div class="gcal-info">
+    <div class="gcal-dot" id="gcal-dot"></div>
+    <div>
+      <div style="font-size:13px;font-weight:600" id="gcal-status-text">Google Calendar non connesso</div>
+      <div style="font-size:11px;color:var(--muted)" id="gcal-user-text">Connetti per sincronizzare appuntamenti</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <span id="sync-status" style="font-size:11px;color:var(--muted)">☁️ Connessione cloud...</span>
+    <button id="gcal-btn" onclick="handleGCalAuth()">🔗 Connetti Google Calendar</button>
+  </div>
+</div>
 
 <!-- POPUP DETTAGLIO ATTIVITÀ -->
 <div id="att-popup" style="display:none;position:fixed;z-index:600;pointer-events:none;">
@@ -444,6 +473,7 @@ let db = {
     { id:2, nome:"Anna", cognome:"Conti", email:"anna.conti@email.it", telefono:"366-1122334", citta:"Roma", note:"Vuole vendere entro 6 mesi" },
   ],
   altri: [],
+  richieste: [],
   immobili: [
     { id:1, titolo:"Trilocale Via Montenapoleone", tipo:"Appartamento", citta:"Milano", indirizzo:"Via Montenapoleone 12", prezzo:"320.000", mq:85, locali:3, proprietarioId:1, acquirenteId:null, stato:"disponibile", contratto:"vendita" },
     { id:2, titolo:"Bilocale Prati", tipo:"Appartamento", citta:"Roma", indirizzo:"Via Cola di Rienzo 45", prezzo:"265.000", mq:60, locali:2, proprietarioId:2, acquirenteId:2, stato:"trattativa", contratto:"locazione" },
@@ -481,6 +511,7 @@ window._startFirebaseSync = function() {
       db.acquirenti = remoteDb.acquirenti || db.acquirenti || [];
       db.proprietari = remoteDb.proprietari || db.proprietari || [];
       db.altri = remoteDb.altri || db.altri || [];
+      db.richieste = remoteDb.richieste || db.richieste || [];
       db.immobili = remoteDb.immobili || db.immobili || [];
       db.attivita = remoteDb.attivita || db.attivita || [];
       // Salva in localStorage come backup
@@ -631,6 +662,9 @@ function toggleSidebar() {
   const btn = document.getElementById('toggle-sidebar');
   btn.textContent = sidebarOpen ? '◀' : '▶';
   btn.classList.toggle('sidebar-open', sidebarOpen);
+  // Aggiorna posizione google bar
+  const gbar = document.getElementById('google-bar');
+  if(gbar) gbar.style.left = sidebarOpen ? 'var(--sidebar-w)' : '0';
 }
 
 // ─────────────────────────────────────────────
@@ -656,6 +690,7 @@ function renderPage(name) {
   else if(name === 'acquirenti') renderPersone('acquirenti');
   else if(name === 'proprietari') renderPersone('proprietari');
   else if(name === 'altri') renderAltri();
+  else if(name === 'richieste') renderRichieste();
   else if(name === 'immobili') renderImmobili();
   else if(name === 'attivita') renderAttivita();
   else if(name === 'calendario') renderCalendario();
@@ -679,7 +714,7 @@ function getPersona(tipo, id) {
 function badge(text, color) {
   return `<span class="badge" style="background:${color}22;color:${color};border:1px solid ${color}44">${text}</span>`;
 }
-function tipoColor(t) { return t==='telefonata'?'#4ade80':t==='email'?'#60a5fa':'#fb923c'; }
+function tipoColor(t) { return t==='telefonata'?'#4ade80':t==='messaggio'?'#60a5fa':'#fb923c'; }
 function statoColor(s) { return s==='disponibile'?'#4ade80':s==='trattativa'?'#fb923c':'#f87171'; }
 function contrattoColor(c) { return c==='vendita'?'#c8a96e':c==='locazione'?'#a78bfa':'#34d399'; }
 function contrattoIcon(c) { return c==='vendita'?'🏷️':c==='locazione'?'📋':'🔑'; }
@@ -697,11 +732,12 @@ function toast(msg, type='green') {
 //  RENDER DASHBOARD
 // ─────────────────────────────────────────────
 function renderDashboard() {
+  if(!document.getElementById('stats-grid')) return;
   const stats = [
     { l:'Acquirenti', v:db.acquirenti.length, c:'#60a5fa', i:'👥' },
     { l:'Proprietari', v:db.proprietari.length, c:'#4ade80', i:'🏠' },
     { l:'Immobili', v:db.immobili.length, c:'#c8a96e', i:'🏢' },
-    { l:'Disponibili', v:db.immobili.filter(i=>i.stato==='disponibile').length, c:'#4ade80', i:'✅' },
+    { l:'Richieste', v:(db.richieste||[]).length, c:'#a78bfa', i:'🔍' },
     { l:'In Trattativa', v:db.immobili.filter(i=>i.stato==='trattativa').length, c:'#fb923c', i:'🤝' },
     { l:'Totale Attività', v:db.attivita.length, c:'#60a5fa', i:'📋' },
   ];
@@ -737,8 +773,11 @@ function renderDashboard() {
 function renderPersone(tipo) {
   const arr = db[tipo];
   const tipoSing = tipo === 'acquirenti' ? 'acquirente' : 'proprietario';
-  document.getElementById(tipo==='acquirenti'?'acq-count':'prop-count').textContent = arr.length + ' contatti registrati';
-  document.getElementById('list-' + tipo).innerHTML = arr.map(p => personaCard(p, tipoSing)).join('');
+  const countEl = document.getElementById(tipo==='acquirenti'?'acq-count':'prop-count');
+  const listEl = document.getElementById('list-' + tipo);
+  if(!countEl || !listEl) return;
+  countEl.textContent = arr.length + ' contatti registrati';
+  listEl.innerHTML = arr.map(p => personaCard(p, tipoSing)).join('');
 }
 
 function personaCard(p, tipo) {
@@ -820,93 +859,204 @@ function deletePersona(tipo, id) {
 //  RENDER ALTRI
 // ─────────────────────────────────────────────
 function renderAltri() {
-  document.getElementById('altri-count').textContent = db.altri.length + ' contatti registrati';
-  document.getElementById('list-altri').innerHTML = db.altri.length
+  const countEl = document.getElementById('altri-count');
+  const listEl = document.getElementById('list-altri');
+  if(!countEl || !listEl) return;
+  countEl.textContent = db.altri.length + ' contatti registrati';
+  listEl.innerHTML = db.altri.length
     ? db.altri.map(p => personaCard(p, 'altro')).join('')
     : '<span style="color:var(--muted);font-size:14px">Nessun contatto. Aggiungi il primo!</span>';
 }
 
 // ─────────────────────────────────────────────
-//  CALENDARIO SETTIMANALE
+//  RENDER RICHIESTE
+// ─────────────────────────────────────────────
+function renderRichieste() {
+  if(!db.richieste) db.richieste = [];
+  const countEl = document.getElementById('rich-count');
+  const matchEl = document.getElementById('match-results');
+  const listEl = document.getElementById('list-richieste');
+  if(!countEl || !listEl) return;
+  countEl.textContent = db.richieste.length + ' richieste registrate';
+  if(matchEl) matchEl.style.display = 'none';
+  document.getElementById('list-richieste').innerHTML = db.richieste.length
+    ? db.richieste.map(r => {
+        const acq = db.acquirenti.find(a => a.id === r.acquirenteId);
+        return `<div class="card">
+          <div class="card-header">
+            <div style="flex:1">
+              <div class="card-name">${acq ? acq.nome+' '+acq.cognome : '—'}</div>
+              <div style="display:flex;gap:14px;margin-top:8px;flex-wrap:wrap">
+                ${r.zonaDesiderata ? `<span style="color:var(--muted);font-size:13px">📍 ${r.zonaDesiderata}</span>` : ''}
+                ${r.prezzoMin||r.prezzoMax ? `<span style="color:var(--accent);font-size:13px">💰 ${r.prezzoMin||'0'} – ${r.prezzoMax||'∞'} €</span>` : ''}
+                ${r.localiMin ? `<span style="color:var(--muted);font-size:13px">🚪 min ${r.localiMin} locali</span>` : ''}
+                ${r.mqMin ? `<span style="color:var(--muted);font-size:13px">📐 min ${r.mqMin} mq</span>` : ''}
+                ${r.tipo ? `<span style="color:var(--blue);font-size:13px">🏠 ${r.tipo}</span>` : ''}
+                ${r.contratto ? `<span style="color:var(--blue);font-size:12px">${r.contratto}</span>` : ''}
+              </div>
+              ${r.note ? `<div class="card-note" style="margin-top:6px">"${r.note}"</div>` : ''}
+            </div>
+            <div class="actions-wrap">
+              <button class="actions-toggle" onclick="toggleDropdown('dd-rich-${r.id}')">⋯</button>
+              <div class="actions-dropdown" id="dd-rich-${r.id}">
+                <button class="edit" onclick="closeDropdown('dd-rich-${r.id}');openModal('richiesta',${r.id})">✏️ Modifica</button>
+                <button class="del" onclick="closeDropdown('dd-rich-${r.id}');deleteRichiesta(${r.id})">🗑 Elimina</button>
+              </div>
+            </div>
+          </div>
+        </div>`;
+      }).join('')
+    : '<span style="color:var(--muted);font-size:14px">Nessuna richiesta. Aggiungi la prima!</span>';
+}
+
+function deleteRichiesta(id) {
+  db.richieste = db.richieste.filter(r => r.id !== id);
+  saveDb(); renderRichieste(); toast('Richiesta eliminata');
+}
+
+function matchRichieste() {
+  if(!db.richieste || !db.richieste.length) { toast('Nessuna richiesta da incrociare', 'orange'); return; }
+  const results = [];
+  db.richieste.forEach(r => {
+    const acq = db.acquirenti.find(a => a.id === r.acquirenteId);
+    const matches = db.immobili.filter(i => {
+      if(r.contratto && i.contratto && r.contratto !== i.contratto) return false;
+      if(r.tipo && i.tipo && r.tipo !== i.tipo) return false;
+      if(r.prezzoMax) { const p = parseFloat((i.prezzo||'').replace(/\./g,'').replace(',','.')); if(p && p > parseFloat(r.prezzoMax)) return false; }
+      if(r.prezzoMin) { const p = parseFloat((i.prezzo||'').replace(/\./g,'').replace(',','.')); if(p && p < parseFloat(r.prezzoMin)) return false; }
+      if(r.localiMin && i.locali && i.locali < parseInt(r.localiMin)) return false;
+      if(r.mqMin && i.mq && i.mq < parseInt(r.mqMin)) return false;
+      if(r.zonaDesiderata && i.indirizzo) { const zona = r.zonaDesiderata.toLowerCase(); if(!i.indirizzo.toLowerCase().includes(zona) && !i.citta.toLowerCase().includes(zona)) return false; }
+      return true;
+    });
+    if(matches.length) results.push({ r, acq, matches });
+  });
+
+  const el = document.getElementById('match-results');
+  if(!results.length) { el.style.display='block'; el.innerHTML='<div class="col-card"><div style="color:var(--muted)">Nessun abbinamento trovato con i criteri attuali.</div></div>'; return; }
+  el.style.display = 'block';
+  el.innerHTML = `<div class="col-card">
+    <div class="col-title">🔍 Risultati Incrocio (${results.reduce((s,r)=>s+r.matches.length,0)} abbinamenti)</div>
+    ${results.map(({r, acq, matches}) => `
+      <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border)">
+        <div style="font-weight:600;color:var(--text);margin-bottom:8px">👥 ${acq?acq.nome+' '+acq.cognome:'—'}</div>
+        ${matches.map(i => `
+          <div style="background:var(--bg);border-radius:8px;padding:10px 14px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-size:13px;font-weight:600">${i.titolo}</div>
+              <div style="color:var(--muted);font-size:12px">📍 ${i.indirizzo}, ${i.citta} &nbsp;•&nbsp; €${i.prezzo} &nbsp;•&nbsp; ${i.locali} locali &nbsp;•&nbsp; ${i.mq} mq</div>
+            </div>
+            ${badge(i.stato, statoColor(i.stato))}
+          </div>`).join('')}
+      </div>`).join('')}
+  </div>`;
+}
+// ─────────────────────────────────────────────
+//  CALENDARIO
 // ─────────────────────────────────────────────
 let calWeekOffset = 0;
+let calDayOffset = 0;
+let calView = 'week';
+
+function setCalView(v) {
+  calView = v;
+  const btnW = document.getElementById('btn-view-week');
+  const btnD = document.getElementById('btn-view-day');
+  if(btnW) btnW.classList.toggle('active', v==='week');
+  if(btnD) btnD.classList.toggle('active', v==='day');
+  renderCalendario();
+}
 
 function changeWeek(dir) {
-  if(dir === 0) calWeekOffset = 0;
+  if(dir === 0) { calWeekOffset = 0; calDayOffset = 0; }
+  else if(calView === 'day') calDayOffset += dir;
   else calWeekOffset += dir;
   renderCalendario();
 }
 
 function getWeekDays(offset) {
   const today = new Date();
-  const dow = today.getDay() === 0 ? 6 : today.getDay() - 1; // lunedì=0
+  const dow = today.getDay() === 0 ? 6 : today.getDay() - 1;
   const monday = new Date(today);
   monday.setDate(today.getDate() - dow + offset * 7);
   monday.setHours(0,0,0,0);
   return Array.from({length:7}, (_, i) => {
-    const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
-    return d;
+    const d = new Date(monday); d.setDate(monday.getDate() + i); return d;
   });
 }
 
-// Usa ora locale (non UTC) per evitare sfasamento di fuso orario
 function fmtDate(d) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth()+1).padStart(2,'0');
-  const g = String(d.getDate()).padStart(2,'0');
-  return `${y}-${m}-${g}`;
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
 function renderCalendario() {
-  const days = getWeekDays(calWeekOffset);
+  const el = document.getElementById('cal-grid');
+  const labelEl = document.getElementById('cal-week-label');
+  if(!el) return;
   const todayStr = fmtDate(new Date());
   const dayNames = ['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
-  const hours = Array.from({length:24}, (_,i) => i);
-
   const opts = { day:'numeric', month:'long' };
-  document.getElementById('cal-week-label').textContent =
-    `${days[0].toLocaleDateString('it-IT', opts)} – ${days[6].toLocaleDateString('it-IT', opts)}`;
 
-  // Mostra TUTTE le attività — anche passate — nella settimana visualizzata
-  const attByDay = {};
-  days.forEach(d => { attByDay[fmtDate(d)] = {}; });
+  let days;
+  if(calView === 'day') {
+    const d = new Date(); d.setDate(d.getDate() + calDayOffset); d.setHours(0,0,0,0);
+    days = [d];
+    if(labelEl) labelEl.textContent = d.toLocaleDateString('it-IT', { weekday:'long', day:'numeric', month:'long' });
+  } else {
+    days = getWeekDays(calWeekOffset);
+    if(labelEl) labelEl.textContent = `${days[0].toLocaleDateString('it-IT', opts)} – ${days[6].toLocaleDateString('it-IT', opts)}`;
+  }
+
+  // Raggruppa attività per giorno + ora:minuto (slot 30 min)
+  const attBySlot = {}; // key: "YYYY-MM-DD_HH:MM"
   db.attivita.forEach(a => {
-    if(!attByDay[a.data]) return;
-    const h = a.ora ? parseInt(a.ora.split(':')[0]) : 9;
-    if(!attByDay[a.data][h]) attByDay[a.data][h] = [];
-    attByDay[a.data][h].push(a);
+    const ora = a.ora || '09:00';
+    const [hh, mm] = ora.split(':').map(Number);
+    const slot = mm >= 30 ? '30' : '00';
+    const key = `${a.data}_${String(hh).padStart(2,'0')}:${slot}`;
+    if(!attBySlot[key]) attBySlot[key] = [];
+    attBySlot[key].push(a);
   });
 
-  let html = '<div class="cal-grid">';
-  html += '<div class="cal-header" style="background:var(--bg)"></div>';
-  days.forEach((d,i) => {
+  const cols = calView === 'day' ? 1 : 7;
+  let html = `<div class="cal-grid ${calView}" style="min-width:${calView==='day'?'320px':'560px'}">`;
+
+  // Header
+  html += `<div class="cal-header" style="background:var(--bg)"></div>`;
+  days.forEach((d, i) => {
     const isToday = fmtDate(d) === todayStr;
-    html += `<div class="cal-header${isToday?' today':''}">${dayNames[i]}<br><span style="font-size:16px;font-weight:700">${d.getDate()}</span></div>`;
+    const dname = calView === 'day' ? d.toLocaleDateString('it-IT',{weekday:'long'}) : dayNames[i];
+    html += `<div class="cal-header${isToday?' today':''}">${dname}<br><span style="font-size:${calView==='day'?'20':'15'}px;font-weight:700">${d.getDate()}</span></div>`;
   });
 
-  hours.forEach(h => {
-    html += `<div class="cal-time">${String(h).padStart(2,'0')}:00</div>`;
-    days.forEach(d => {
-      const ds = fmtDate(d);
-      const isToday = ds === todayStr;
-      const events = (attByDay[ds]||{})[h] || [];
-      const evHtml = events.map(a => {
-        const p = getPersona(a.personaTipo, a.personaId);
-        const col = tipoColor(a.tipo);
-        const icon = a.tipo==='telefonata'?'📞':a.tipo==='email'?'✉️':'📅';
-        return `<div class="cal-event" style="background:${col}22;border-left:3px solid ${col};color:${col};cursor:pointer" 
-          onclick="showAttivitaPopup(${a.id}, event)">
-          ${icon} ${p ? p.nome : ''}<br>
-          <span style="color:var(--text);font-size:10px">${a.ora||''} ${(a.note||'').slice(0,20)}</span>
-        </div>`;
-      }).join('');
-      html += `<div class="cal-cell${isToday?' today-col':''}">${evHtml}</div>`;
-    });
-  });
-
+  // Righe: ogni ora ha due slot (HH:00 e HH:30)
+  for(let h = 0; h < 24; h++) {
+    for(let half = 0; half < 2; half++) {
+      const mm = half === 0 ? '00' : '30';
+      const isHalf = half === 1;
+      const timeLabel = isHalf ? '' : `${String(h).padStart(2,'0')}:00`;
+      html += `<div class="cal-time${isHalf?' half':''}">${timeLabel}</div>`;
+      days.forEach(d => {
+        const ds = fmtDate(d);
+        const isToday = ds === todayStr;
+        const key = `${ds}_${String(h).padStart(2,'0')}:${mm}`;
+        const events = attBySlot[key] || [];
+        const evHtml = events.map(a => {
+          const p = getPersona(a.personaTipo, a.personaId);
+          const col = tipoColor(a.tipo);
+          const icon = a.tipo==='telefonata'?'📞':a.tipo==='messaggio'?'💬':'📅';
+          return `<div class="cal-event" style="background:${col}22;border-left:3px solid ${col};color:${col}"
+            onclick="showAttivitaPopup(${a.id}, event)">
+            ${icon} ${p ? p.nome : ''}<br>
+            <span style="color:var(--text);font-size:10px">${a.ora||''} ${(a.note||'').slice(0,18)}</span>
+          </div>`;
+        }).join('');
+        html += `<div class="cal-cell${isHalf?' half':''}${isToday?' today-col':''}">${evHtml}</div>`;
+      });
+    }
+  }
   html += '</div>';
-  document.getElementById('cal-grid').innerHTML = html;
+  el.innerHTML = html;
 }
 
 function showAttivitaPopup(id, evt) {
@@ -916,7 +1066,7 @@ function showAttivitaPopup(id, evt) {
   const p = getPersona(a.personaTipo, a.personaId);
   const imm = db.immobili.find(i => i.id === a.immobileId);
   const col = tipoColor(a.tipo);
-  const icon = a.tipo==='telefonata'?'📞':a.tipo==='email'?'✉️':'📅';
+  const icon = a.tipo==='telefonata'?'📞':a.tipo==='messaggio'?'💬':'📅';
   const tipoLabel = a.tipo.charAt(0).toUpperCase()+a.tipo.slice(1);
 
   let html = `
@@ -935,9 +1085,8 @@ function showAttivitaPopup(id, evt) {
   </div>`;
 
   if(imm) html += `<div style="margin-bottom:8px;font-size:13px;color:var(--accent)">🏢 ${imm.titolo}${imm.contratto?' · '+imm.contratto:''}</div>`;
-
   if(a.note) html += `<div style="margin-bottom:6px;font-size:13px;color:var(--text)">📝 ${a.note}</div>`;
-  if(a.oggetto) html += `<div style="margin-bottom:6px;font-size:12px;color:#60a5fa">✉️ Oggetto: ${a.oggetto}</div>`;
+  if(a.oggetto) html += `<div style="margin-bottom:6px;font-size:12px;color:#60a5fa">💬 ${a.oggetto}</div>`;
   if(a.luogo) html += `<div style="margin-bottom:6px;font-size:12px;color:#4ade80">📍 ${a.luogo}</div>`;
   if(a.durata) html += `<div style="margin-bottom:6px;font-size:12px;color:var(--muted)">⏱ Durata: ${a.durata}</div>`;
 
@@ -1043,8 +1192,11 @@ function editAttivita(id) {
 //  RENDER IMMOBILI
 // ─────────────────────────────────────────────
 function renderImmobili() {
-  document.getElementById('imm-count').textContent = db.immobili.length + ' immobili nel portafoglio';
-  document.getElementById('list-immobili').innerHTML = db.immobili.map(i => {
+  const countEl = document.getElementById('imm-count');
+  const listEl = document.getElementById('list-immobili');
+  if(!countEl || !listEl) return;
+  countEl.textContent = db.immobili.length + ' immobili nel portafoglio';
+  listEl.innerHTML = db.immobili.map(i => {
     const prop = db.proprietari.find(p => p.id === i.proprietarioId);
     const acq = db.acquirenti.find(a => a.id === i.acquirenteId);
     return `<div class="card">
@@ -1085,16 +1237,17 @@ function deleteImmobile(id) {
 //  RENDER ATTIVITÀ
 // ─────────────────────────────────────────────
 function renderAttivita() {
+  if(!document.getElementById('act-badges')) return;
   const tel = db.attivita.filter(a=>a.tipo==='telefonata').length;
-  const ema = db.attivita.filter(a=>a.tipo==='email').length;
+  const msg = db.attivita.filter(a=>a.tipo==='messaggio').length;
   const app = db.attivita.filter(a=>a.tipo==='appuntamento').length;
   document.getElementById('act-badges').innerHTML =
     badge('📞 '+tel+' telefonate','#4ade80') + ' ' +
-    badge('✉️ '+ema+' email','#60a5fa') + ' ' +
+    badge('💬 '+msg+' messaggi','#60a5fa') + ' ' +
     badge('📅 '+app+' appuntamenti','#fb923c');
 
-  const tipi = ['telefonata','email','appuntamento'];
-  const icons = { telefonata:'📞', email:'✉️', appuntamento:'📅' };
+  const tipi = ['telefonata','messaggio','appuntamento'];
+  const icons = { telefonata:'📞', messaggio:'💬', appuntamento:'📅' };
   document.getElementById('list-attivita').innerHTML = tipi.map(tipo => {
     const lista = db.attivita.filter(a => a.tipo === tipo);
     const rows = lista.map(a => {
@@ -1152,7 +1305,7 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
   currentModal = tipo; editingId = id;
   document.getElementById('modal-overlay').classList.add('open');
 
-  const labels = { acquirente:'Acquirente', proprietario:'Proprietario', altro:'Altro Contatto', immobile:'Immobile', attivita:'Attività' };
+  const labels = { acquirente:'Acquirente', proprietario:'Proprietario', altro:'Altro Contatto', immobile:'Immobile', attivita:'Attività', richiesta:'Richiesta Acquirente' };
   document.getElementById('modal-title').textContent = (id ? 'Modifica ' : 'Nuovo ') + labels[tipo];
 
   let data = {};
@@ -1161,10 +1314,43 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
     else if(tipo==='proprietario') data = db.proprietari.find(p=>p.id===id)||{};
     else if(tipo==='altro') data = db.altri.find(p=>p.id===id)||{};
     else if(tipo==='immobile') data = db.immobili.find(i=>i.id===id)||{};
+    else if(tipo==='richiesta') data = (db.richieste||[]).find(r=>r.id===id)||{};
   }
 
   let html = '';
-  if(tipo==='acquirente' || tipo==='proprietario' || tipo==='altro') {
+  if(tipo==='richiesta') {
+    const acqOpts = db.acquirenti.map(a=>`<option value="${a.id}" ${data.acquirenteId===a.id?'selected':''}>${a.nome} ${a.cognome}</option>`).join('');
+    html = `
+      <div class="form-group"><label class="form-label">Acquirente</label>
+        <select class="form-control" id="f-acq-rich"><option value="">-- seleziona --</option>${acqOpts}</select>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Zona desiderata</label><input class="form-control" id="f-zona" placeholder="es. Milano centro" value="${data.zonaDesiderata||''}"></div>
+        <div class="form-group"><label class="form-label">Tipo immobile</label>
+          <select class="form-control" id="f-tipo-imm">
+            <option value="">-- qualsiasi --</option>
+            ${['Appartamento','Villa','Ufficio','Negozio','Terreno'].map(t=>`<option ${data.tipo===t?'selected':''}>${t}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Prezzo min (€)</label><input class="form-control" id="f-prezzo-min" type="number" value="${data.prezzoMin||''}"></div>
+        <div class="form-group"><label class="form-label">Prezzo max (€)</label><input class="form-control" id="f-prezzo-max" type="number" value="${data.prezzoMax||''}"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Locali min</label><input class="form-control" id="f-locali-min" type="number" value="${data.localiMin||''}"></div>
+        <div class="form-group"><label class="form-label">Mq min</label><input class="form-control" id="f-mq-min" type="number" value="${data.mqMin||''}"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Contratto</label>
+        <select class="form-control" id="f-contr-rich">
+          <option value="">-- qualsiasi --</option>
+          ${['vendita','locazione','affitto'].map(c=>`<option value="${c}" ${data.contratto===c?'selected':''}>${c.charAt(0).toUpperCase()+c.slice(1)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note" rows="2">${data.note||''}</textarea></div>
+      <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="saveRichiesta()">💾 ${id?'Salva Modifiche':'Aggiungi Richiesta'}</button>`;
+  }
+  else if(tipo==='acquirente' || tipo==='proprietario' || tipo==='altro') {
     html = `
       <div class="form-row">
         <div class="form-group"><label class="form-label">Nome</label><input class="form-control" id="f-nome" value="${data.nome||''}"></div>
@@ -1223,7 +1409,7 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
         <div class="form-group"><label class="form-label">Tipo</label>
           <select class="form-control" id="f-tipo-att" onchange="toggleAttFields()">
             <option value="telefonata">📞 Telefonata</option>
-            <option value="email">✉️ Email</option>
+            <option value="messaggio">💬 Messaggio</option>
             <option value="appuntamento">📅 Appuntamento</option>
           </select>
         </div>
@@ -1244,9 +1430,9 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
           </select>
         </div>
       </div>
-      <div id="f-extra-durata" class="form-group"><label class="form-label">Durata</label><input class="form-control" id="f-durata" placeholder="es. 15 min"></div>
-      <div id="f-extra-oggetto" class="form-group" style="display:none"><label class="form-label">Oggetto Email</label><input class="form-control" id="f-oggetto"></div>
-      <div id="f-extra-luogo" class="form-group" style="display:none"><label class="form-label">Luogo Appuntamento</label><input class="form-control" id="f-luogo"></div>
+      <div id="f-extra-durata" class="form-group" style="display:none"><label class="form-label">Durata</label><input class="form-control" id="f-durata" placeholder="es. 30 min"></div>
+      <div id="f-extra-oggetto" class="form-group" style="display:none"><label class="form-label">Testo / Oggetto</label><input class="form-control" id="f-oggetto"></div>
+      <div id="f-extra-luogo" class="form-group" style="display:none"><label class="form-label">Luogo</label><input class="form-control" id="f-luogo"></div>
       <div class="form-group"><label class="form-label">Immobile di riferimento</label>
         <select class="form-control" id="f-immobile-id">
           <option value="">-- nessuno --</option>
@@ -1279,8 +1465,8 @@ function switchPersoneOpts() {
 
 function toggleAttFields() {
   const tipo = document.getElementById('f-tipo-att').value;
-  document.getElementById('f-extra-durata').style.display = tipo==='telefonata' ? 'block' : 'none';
-  document.getElementById('f-extra-oggetto').style.display = tipo==='email' ? 'block' : 'none';
+  document.getElementById('f-extra-durata').style.display = (tipo==='telefonata'||tipo==='appuntamento') ? 'block' : 'none';
+  document.getElementById('f-extra-oggetto').style.display = tipo==='messaggio' ? 'block' : 'none';
   document.getElementById('f-extra-luogo').style.display = tipo==='appuntamento' ? 'block' : 'none';
   document.getElementById('gcal-note').style.display = (tipo==='appuntamento' && gCalConnected) ? 'block' : 'none';
 }
@@ -1327,9 +1513,29 @@ function saveImmobile() {
   toast(editingId ? 'Modifiche salvate' : 'Immobile aggiunto!');
 }
 
+function saveRichiesta() {
+  if(!db.richieste) db.richieste = [];
+  const obj = {
+    acquirenteId: parseInt(document.getElementById('f-acq-rich').value)||null,
+    zonaDesiderata: document.getElementById('f-zona').value.trim(),
+    tipo: document.getElementById('f-tipo-imm').value,
+    prezzoMin: document.getElementById('f-prezzo-min').value.trim(),
+    prezzoMax: document.getElementById('f-prezzo-max').value.trim(),
+    localiMin: document.getElementById('f-locali-min').value.trim(),
+    mqMin: document.getElementById('f-mq-min').value.trim(),
+    contratto: document.getElementById('f-contr-rich').value,
+    note: g('f-note'),
+  };
+  if(editingId) { db.richieste = db.richieste.map(r => r.id===editingId ? {...r,...obj} : r); }
+  else { obj.id = nextId(db.richieste); db.richieste.push(obj); }
+  saveDb();
+  document.getElementById('modal-overlay').classList.remove('open');
+  renderRichieste();
+  toast(editingId ? 'Richiesta aggiornata!' : 'Richiesta aggiunta!');
+}
+
 function saveAttivita() {
   const obj = {
-    tipo: g('f-tipo-att'),
     data: g('f-data'),
     ora: g('f-ora'),
     personaTipo: g('f-persona-tipo'),
