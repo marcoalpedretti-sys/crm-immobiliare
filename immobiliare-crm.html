@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Immobilia CRM</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script type="module">
 // ─────────────────────────────────────────────
 //  FIREBASE INIT
@@ -376,6 +378,7 @@ window.addEventListener('load', () => {
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <button class="btn-dashboard" onclick="showPage('dashboard')">◈ Dashboard</button>
         <button class="btn-sm btn-gcal" style="padding:8px 14px;font-size:13px" onclick="matchRichieste()">🔍 Incrocia con Immobili</button>
+        <button class="btn-sm" style="padding:8px 14px;font-size:13px;background:rgba(248,113,113,0.15);border:1px solid rgba(248,113,113,0.4);color:#f87171;border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif" onclick="pdfIncroci()">📄 PDF Incroci</button>
         <button class="btn btn-primary" onclick="openModal('richiesta')">+ Nuova Richiesta</button>
       </div>
     </div>
@@ -848,6 +851,14 @@ function personaCard(p, tipo) {
         <div class="card-sub">✉️ ${p.email||''}</div>
         ${p.budget ? `<div style="color:var(--accent);font-size:13px;margin-top:4px">💰 Budget: €${p.budget}</div>` : ''}
         ${p.ruolo ? `<div style="color:var(--blue);font-size:12px;margin-top:2px">🏷️ ${p.ruolo}</div>` : ''}
+        ${(tipo==='acquirente'||tipo==='proprietario') ? `<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+          ${p.privacy
+            ? `<span style="background:rgba(74,222,128,0.15);color:#4ade80;border:1px solid rgba(74,222,128,0.4);border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700">🔒 Privacy ✓</span>`
+            : `<span style="background:rgba(248,113,113,0.1);color:#f87171;border:1px solid rgba(248,113,113,0.3);border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700">🔒 Privacy ✗</span>`}
+          ${p.antiriciclaggio
+            ? `<span style="background:rgba(96,165,250,0.15);color:#60a5fa;border:1px solid rgba(96,165,250,0.4);border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700">🛡️ Antiriciclaggio ✓</span>`
+            : `<span style="background:rgba(248,113,113,0.1);color:#f87171;border:1px solid rgba(248,113,113,0.3);border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700">🛡️ Antiriciclaggio ✗</span>`}
+        </div>` : ''}
         ${p.driveUrl ? `<a href="${p.driveUrl}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;margin-top:6px;color:#34a853;font-size:12px;text-decoration:none;background:rgba(52,168,83,0.1);border:1px solid rgba(52,168,83,0.3);border-radius:6px;padding:3px 8px;">📁 Cartella Drive</a>` : ''}
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
@@ -859,6 +870,7 @@ function personaCard(p, tipo) {
             <button class="edit" onclick="closeDropdown('dd-${uid}');openModal('${tipo}', ${p.id})">✏️ Modifica</button>
             <button onclick="closeDropdown('dd-${uid}');openDriveModal('${tipo}', ${p.id})">📁 Cartella Drive</button>
             <button onclick="closeDropdown('dd-${uid}');openModal('attivita', null, '${tipo}', ${p.id})">➕ Attività</button>
+            <button onclick="closeDropdown('dd-${uid}');pdfPersona('${tipo}', ${p.id})">📄 Report PDF</button>
             <button class="del" onclick="closeDropdown('dd-${uid}');deletePersona('${tipo}', ${p.id})">🗑 Elimina</button>
           </div>
         </div>
@@ -947,6 +959,7 @@ function renderRichieste() {
               <button class="actions-toggle" onclick="toggleDropdown('dd-rich-${r.id}')">⋯</button>
               <div class="actions-dropdown" id="dd-rich-${r.id}">
                 <button class="edit" onclick="closeDropdown('dd-rich-${r.id}');openModal('richiesta',${r.id})">✏️ Modifica</button>
+                <button onclick="closeDropdown('dd-rich-${r.id}');pdfRichiesta(${r.id})">📄 Report PDF</button>
                 <button class="del" onclick="closeDropdown('dd-rich-${r.id}');deleteRichiesta(${r.id})">🗑 Elimina</button>
               </div>
             </div>
@@ -1269,6 +1282,7 @@ function renderImmobili() {
           <div class="actions-dropdown" id="dd-imm-${i.id}">
             <button class="edit" onclick="closeDropdown('dd-imm-${i.id}');openModal('immobile', ${i.id})">✏️ Modifica</button>
             <button onclick="closeDropdown('dd-imm-${i.id}');openDriveModal('immobile', ${i.id})">📁 Cartella Drive</button>
+            <button onclick="closeDropdown('dd-imm-${i.id}');pdfImmobile(${i.id})">📄 Report PDF</button>
             <button class="del" onclick="closeDropdown('dd-imm-${i.id}');deleteImmobile(${i.id})">🗑 Elimina</button>
           </div>
         </div>
@@ -1474,6 +1488,20 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
       <div class="form-group"><label class="form-label">Città</label><input class="form-control" id="f-citta" value="${data.citta||''}"></div>
       ${tipo==='acquirente' ? `<div class="form-group"><label class="form-label">Budget (€)</label><input class="form-control" id="f-budget" value="${data.budget||''}"></div>` : ''}
       ${tipo==='altro' ? `<div class="form-group"><label class="form-label">Ruolo / Categoria</label><input class="form-control" id="f-ruolo" placeholder="es. Notaio, Banca, Geometra..." value="${data.ruolo||''}"></div>` : ''}
+      ${(tipo==='acquirente' || tipo==='proprietario') ? `
+      <div style="background:rgba(200,169,110,0.07);border:1px solid rgba(200,169,110,0.2);border-radius:10px;padding:14px;margin-bottom:14px">
+        <div style="color:var(--accent);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:12px">Adempimenti Obbligatori</div>
+        <div style="display:flex;gap:24px;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;color:var(--text)">
+            <input type="checkbox" id="f-privacy" ${data.privacy?'checked':''} style="width:16px;height:16px;accent-color:var(--green);cursor:pointer">
+            🔒 Privacy firmata
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;color:var(--text)">
+            <input type="checkbox" id="f-antiriciclaggio" ${data.antiriciclaggio?'checked':''} style="width:16px;height:16px;accent-color:var(--blue);cursor:pointer">
+            🛡️ Antiriciclaggio firmato
+          </label>
+        </div>
+      </div>` : ''}
       <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note" rows="3">${data.note||''}</textarea></div>
       <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="savePersona()">💾 ${id?'Salva Modifiche':'Aggiungi'}</button>`;
   }
@@ -1599,6 +1627,12 @@ function savePersona() {
   };
   if(tipo==='acquirente') obj.budget = g('f-budget');
   if(tipo==='altro') obj.ruolo = g('f-ruolo');
+  if(tipo==='acquirente' || tipo==='proprietario') {
+    const privEl = document.getElementById('f-privacy');
+    const antiEl = document.getElementById('f-antiriciclaggio');
+    obj.privacy = privEl ? privEl.checked : false;
+    obj.antiriciclaggio = antiEl ? antiEl.checked : false;
+  }
   if(editingId) { db[arr] = db[arr].map(p => p.id===editingId ? {...p,...obj} : p); }
   else { obj.id = nextId(db[arr]); db[arr].push(obj); }
   saveDb();
@@ -1680,8 +1714,274 @@ function saveAttivita() {
 }
 
 // ─────────────────────────────────────────────
-//  INIT
+//  PDF GENERATION
 // ─────────────────────────────────────────────
+function pdfHeader(doc, titolo, sottotitolo) {
+  const { jsPDF } = window.jspdf;
+  doc.setFillColor(18, 18, 26);
+  doc.rect(0, 0, 210, 30, 'F');
+  doc.setTextColor(200, 169, 110);
+  doc.setFontSize(18);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Immobilia CRM', 14, 12);
+  doc.setFontSize(10);
+  doc.setTextColor(180, 180, 200);
+  doc.setFont('helvetica', 'normal');
+  doc.text(new Date().toLocaleDateString('it-IT', {day:'2-digit',month:'long',year:'numeric'}), 196, 12, {align:'right'});
+  doc.setTextColor(232, 232, 240);
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text(titolo, 14, 22);
+  if(sottotitolo) { doc.setFontSize(10); doc.setFont('helvetica','normal'); doc.setTextColor(150,150,180); doc.text(sottotitolo, 14, 27); }
+  doc.setDrawColor(200, 169, 110);
+  doc.setLineWidth(0.5);
+  doc.line(0, 30, 210, 30);
+  return 38;
+}
+
+function pdfSection(doc, titolo, y) {
+  doc.setFillColor(30, 30, 46);
+  doc.rect(14, y-4, 182, 8, 'F');
+  doc.setTextColor(200, 169, 110);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.text(titolo.toUpperCase(), 16, y+1);
+  doc.setTextColor(50, 50, 60);
+  return y + 8;
+}
+
+function pdfRow(doc, label, value, y, gray) {
+  if(y > 270) { doc.addPage(); y = 20; }
+  if(gray) { doc.setFillColor(245, 245, 250); doc.rect(14, y-3, 182, 7, 'F'); }
+  doc.setTextColor(120, 120, 150);
+  doc.setFontSize(8.5);
+  doc.setFont('helvetica', 'normal');
+  doc.text(label, 16, y+1);
+  doc.setTextColor(40, 40, 60);
+  doc.setFont('helvetica', 'bold');
+  const val = String(value || '—');
+  doc.text(val, 90, y+1);
+  return y + 7;
+}
+
+function pdfFooter(doc) {
+  const pages = doc.internal.getNumberOfPages();
+  for(let i = 1; i <= pages; i++) {
+    doc.setPage(i);
+    doc.setFillColor(18, 18, 26);
+    doc.rect(0, 287, 210, 10, 'F');
+    doc.setTextColor(100, 100, 130);
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Immobilia CRM — Report riservato', 14, 293);
+    doc.text(`Pagina ${i} di ${pages}`, 196, 293, {align:'right'});
+  }
+}
+
+function pdfPersona(tipo, id) {
+  const arr = tipo==='acquirente' ? db.acquirenti : tipo==='proprietario' ? db.proprietari : db.altri;
+  const p = arr.find(x => x.id === id);
+  if(!p) return;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const tipoLabel = tipo==='acquirente'?'Acquirente':tipo==='proprietario'?'Proprietario':'Altro Contatto';
+  let y = pdfHeader(doc, `${p.nome} ${p.cognome}`, tipoLabel);
+
+  y = pdfSection(doc, 'Anagrafica', y);
+  y = pdfRow(doc, 'Nome', `${p.nome} ${p.cognome}`, y, false);
+  y = pdfRow(doc, 'Email', p.email, y, true);
+  y = pdfRow(doc, 'Telefono', p.telefono, y, false);
+  y = pdfRow(doc, 'Città', p.citta, y, true);
+  if(p.budget) y = pdfRow(doc, 'Budget', `€ ${p.budget}`, y, false);
+  if(p.ruolo) y = pdfRow(doc, 'Ruolo', p.ruolo, y, true);
+  if(tipo==='acquirente'||tipo==='proprietario') {
+    y = pdfRow(doc, 'Privacy', p.privacy ? '✓ Firmata' : '✗ Non firmata', y, false);
+    y = pdfRow(doc, 'Antiriciclaggio', p.antiriciclaggio ? '✓ Firmato' : '✗ Non firmato', y, true);
+  }
+  if(p.note) y = pdfRow(doc, 'Note', p.note, y, false);
+  if(p.driveUrl) y = pdfRow(doc, 'Cartella Drive', p.driveUrl, y, true);
+  y += 4;
+
+  // Attività collegate
+  const attivita = db.attivita.filter(a => a.personaTipo === tipo && a.personaId === id);
+  if(attivita.length) {
+    y = pdfSection(doc, `Attività (${attivita.length})`, y);
+    doc.autoTable({
+      startY: y, margin: {left:14, right:14},
+      head: [['Data', 'Ora', 'Tipo', 'Immobile', 'Note']],
+      body: attivita.map(a => {
+        const imm = db.immobili.find(i => i.id === a.immobileId);
+        return [a.data||'', a.ora||'', a.tipo, imm?imm.titolo:'—', (a.note||'').slice(0,50)];
+      }),
+      styles: { fontSize: 8, cellPadding: 3 },
+      headStyles: { fillColor: [30,30,46], textColor: [200,169,110], fontStyle:'bold' },
+      alternateRowStyles: { fillColor: [245,245,250] },
+    });
+    y = doc.lastAutoTable.finalY + 6;
+  }
+
+  // Immobili collegati (per acquirenti)
+  if(tipo === 'acquirente') {
+    const immobili = db.immobili.filter(i => i.acquirenteId === id);
+    if(immobili.length) {
+      y = pdfSection(doc, `Immobili di Interesse (${immobili.length})`, y);
+      doc.autoTable({
+        startY: y, margin: {left:14, right:14},
+        head: [['Titolo', 'Indirizzo', 'Prezzo', 'Stato', 'Contratto']],
+        body: immobili.map(i => [i.titolo, `${i.indirizzo}, ${i.citta}`, `€${i.prezzo}`, i.stato, i.contratto||'']),
+        styles: { fontSize: 8, cellPadding: 3 },
+        headStyles: { fillColor: [30,30,46], textColor: [200,169,110], fontStyle:'bold' },
+        alternateRowStyles: { fillColor: [245,245,250] },
+      });
+    }
+  }
+
+  pdfFooter(doc);
+  doc.save(`${tipoLabel}_${p.nome}_${p.cognome}.pdf`);
+  toast('📄 PDF generato!');
+}
+
+function pdfImmobile(id) {
+  const i = db.immobili.find(x => x.id === id);
+  if(!i) return;
+  const prop = db.proprietari.find(p => p.id === i.proprietarioId);
+  const acq = db.acquirenti.find(a => a.id === i.acquirenteId);
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  let y = pdfHeader(doc, i.titolo, `${i.tipo||''} — ${i.citta}`);
+
+  y = pdfSection(doc, 'Dati Immobile', y);
+  y = pdfRow(doc, 'Indirizzo', `${i.indirizzo}, ${i.citta}`, y, false);
+  y = pdfRow(doc, 'Tipo', i.tipo, y, true);
+  y = pdfRow(doc, 'Contratto', i.contratto, y, false);
+  y = pdfRow(doc, 'Prezzo', `€ ${i.prezzo}`, y, true);
+  y = pdfRow(doc, 'Superficie', `${i.mq} mq`, y, false);
+  y = pdfRow(doc, 'Locali', i.locali, y, true);
+  y = pdfRow(doc, 'Stato', i.stato, y, false);
+  if(i.driveUrl) y = pdfRow(doc, 'Cartella Drive', i.driveUrl, y, true);
+  y += 4;
+
+  if(prop || acq) {
+    y = pdfSection(doc, 'Persone Collegate', y);
+    if(prop) y = pdfRow(doc, 'Proprietario', `${prop.nome} ${prop.cognome} — ${prop.telefono||''} — ${prop.email||''}`, y, false);
+    if(acq)  y = pdfRow(doc, 'Acquirente',   `${acq.nome} ${acq.cognome} — ${acq.telefono||''} — ${acq.email||''}`, y, true);
+    y += 4;
+  }
+
+  // Attività sull'immobile
+  const attivita = db.attivita.filter(a => a.immobileId === id);
+  if(attivita.length) {
+    y = pdfSection(doc, `Attività (${attivita.length})`, y);
+    doc.autoTable({
+      startY: y, margin: {left:14, right:14},
+      head: [['Data', 'Ora', 'Tipo', 'Persona', 'Note']],
+      body: attivita.map(a => {
+        const p = getPersona(a.personaTipo, a.personaId);
+        return [a.data||'', a.ora||'', a.tipo, p?`${p.nome} ${p.cognome}`:'—', (a.note||'').slice(0,50)];
+      }),
+      styles: { fontSize: 8, cellPadding: 3 },
+      headStyles: { fillColor: [30,30,46], textColor: [200,169,110], fontStyle:'bold' },
+      alternateRowStyles: { fillColor: [245,245,250] },
+    });
+  }
+
+  pdfFooter(doc);
+  doc.save(`Immobile_${i.titolo.replace(/[^a-zA-Z0-9]/g,'_')}.pdf`);
+  toast('📄 PDF generato!');
+}
+
+function pdfRichiesta(id) {
+  const r = (db.richieste||[]).find(x => x.id === id);
+  if(!r) return;
+  const acq = db.acquirenti.find(a => a.id === r.acquirenteId);
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  let y = pdfHeader(doc, `Richiesta — ${acq?acq.nome+' '+acq.cognome:''}`, 'Scheda Richiesta Acquirente');
+
+  y = pdfSection(doc, 'Criteri di Ricerca', y);
+  if(acq) y = pdfRow(doc, 'Acquirente', `${acq.nome} ${acq.cognome}`, y, false);
+  y = pdfRow(doc, 'Zona Desiderata', r.zonaDesiderata, y, true);
+  y = pdfRow(doc, 'Tipo Immobile', r.tipo, y, false);
+  y = pdfRow(doc, 'Contratto', r.contratto, y, true);
+  y = pdfRow(doc, 'Prezzo Min', r.prezzoMin ? `€ ${r.prezzoMin}` : '—', y, false);
+  y = pdfRow(doc, 'Prezzo Max', r.prezzoMax ? `€ ${r.prezzoMax}` : '—', y, true);
+  y = pdfRow(doc, 'Locali Min', r.localiMin, y, false);
+  y = pdfRow(doc, 'Mq Min', r.mqMin ? `${r.mqMin} mq` : '—', y, true);
+  if(r.note) y = pdfRow(doc, 'Note', r.note, y, false);
+  y += 6;
+
+  // Immobili compatibili
+  const matches = db.immobili.filter(i => {
+    if(r.contratto && i.contratto && r.contratto !== i.contratto) return false;
+    if(r.tipo && i.tipo && r.tipo !== i.tipo) return false;
+    if(r.prezzoMax) { const p = parseFloat((i.prezzo||'').replace(/\./g,'').replace(',','.')); if(p && p > parseFloat(r.prezzoMax)) return false; }
+    if(r.prezzoMin) { const p = parseFloat((i.prezzo||'').replace(/\./g,'').replace(',','.')); if(p && p < parseFloat(r.prezzoMin)) return false; }
+    if(r.localiMin && i.locali && i.locali < parseInt(r.localiMin)) return false;
+    if(r.mqMin && i.mq && i.mq < parseInt(r.mqMin)) return false;
+    if(r.zonaDesiderata && i.indirizzo) { const zona = r.zonaDesiderata.toLowerCase(); if(!i.indirizzo.toLowerCase().includes(zona) && !i.citta.toLowerCase().includes(zona)) return false; }
+    return true;
+  });
+
+  if(matches.length) {
+    y = pdfSection(doc, `Immobili Compatibili (${matches.length})`, y);
+    doc.autoTable({
+      startY: y, margin: {left:14, right:14},
+      head: [['Titolo', 'Indirizzo', 'Prezzo', 'Mq', 'Locali', 'Stato']],
+      body: matches.map(i => [i.titolo, `${i.indirizzo}, ${i.citta}`, `€${i.prezzo}`, `${i.mq} mq`, i.locali, i.stato]),
+      styles: { fontSize: 8, cellPadding: 3 },
+      headStyles: { fillColor: [30,30,46], textColor: [200,169,110], fontStyle:'bold' },
+      alternateRowStyles: { fillColor: [245,245,250] },
+    });
+  } else {
+    doc.setTextColor(150,150,180); doc.setFontSize(9);
+    doc.text('Nessun immobile compatibile trovato.', 14, y+4);
+  }
+
+  pdfFooter(doc);
+  doc.save(`Richiesta_${acq?acq.nome+'_'+acq.cognome:''.replace(/\s/g,'_')}.pdf`);
+  toast('📄 PDF generato!');
+}
+
+function pdfIncroci() {
+  if(!db.richieste || !db.richieste.length) { toast('Nessuna richiesta da esportare', 'orange'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  let y = pdfHeader(doc, 'Report Incroci', 'Abbinamenti Richieste — Immobili');
+
+  let found = false;
+  db.richieste.forEach(r => {
+    const acq = db.acquirenti.find(a => a.id === r.acquirenteId);
+    const matches = db.immobili.filter(i => {
+      if(r.contratto && i.contratto && r.contratto !== i.contratto) return false;
+      if(r.tipo && i.tipo && r.tipo !== i.tipo) return false;
+      if(r.prezzoMax) { const p = parseFloat((i.prezzo||'').replace(/\./g,'').replace(',','.')); if(p && p > parseFloat(r.prezzoMax)) return false; }
+      if(r.prezzoMin) { const p = parseFloat((i.prezzo||'').replace(/\./g,'').replace(',','.')); if(p && p < parseFloat(r.prezzoMin)) return false; }
+      if(r.localiMin && i.locali && i.locali < parseInt(r.localiMin)) return false;
+      if(r.mqMin && i.mq && i.mq < parseInt(r.mqMin)) return false;
+      if(r.zonaDesiderata && i.indirizzo) { const zona = r.zonaDesiderata.toLowerCase(); if(!i.indirizzo.toLowerCase().includes(zona) && !i.citta.toLowerCase().includes(zona)) return false; }
+      return true;
+    });
+    if(!matches.length) return;
+    found = true;
+    if(y > 250) { doc.addPage(); y = 20; }
+    y = pdfSection(doc, acq ? `${acq.nome} ${acq.cognome}` : 'Richiesta', y);
+    if(acq) { y = pdfRow(doc, 'Tel', acq.telefono||'—', y, false); y = pdfRow(doc, 'Email', acq.email||'—', y, true); y += 2; }
+    doc.autoTable({
+      startY: y, margin: {left:14, right:14},
+      head: [['Titolo', 'Indirizzo', 'Prezzo', 'Mq', 'Locali', 'Stato', 'Contratto']],
+      body: matches.map(i => [i.titolo, `${i.indirizzo||''}, ${i.citta||''}`, `€${i.prezzo}`, `${i.mq}`, i.locali, i.stato, i.contratto||'']),
+      styles: { fontSize: 8, cellPadding: 2.5 },
+      headStyles: { fillColor: [30,30,46], textColor: [200,169,110], fontStyle:'bold' },
+      alternateRowStyles: { fillColor: [245,245,250] },
+    });
+    y = doc.lastAutoTable.finalY + 8;
+  });
+
+  if(!found) { doc.setTextColor(150,150,180); doc.setFontSize(10); doc.text('Nessun abbinamento trovato.', 14, y); }
+  pdfFooter(doc);
+  doc.save(`Report_Incroci_${new Date().toISOString().slice(0,10)}.pdf`);
+  toast('📄 PDF Incroci generato!');
+}
 // Precompila le credenziali se non già salvate
 if (!localStorage.getItem('gcal_client_id')) {
   localStorage.setItem('gcal_client_id', '343575347292-49fpao8vnqqli1aht3co9pr0bpordmoc.apps.googleusercontent.com');
