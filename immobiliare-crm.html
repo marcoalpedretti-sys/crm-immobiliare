@@ -117,6 +117,20 @@ window.addEventListener('load', () => {
     background: var(--card); border: 1px solid var(--border); border-radius: 12px;
     padding: 24px; text-align: center;
   }
+  .stat-card-link {
+    cursor: pointer; transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+    position: relative;
+  }
+  .stat-card-link:hover {
+    border-color: var(--accent); transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+  }
+  .stat-card-link:active { transform: translateY(0); }
+  .stat-arrow {
+    position: absolute; bottom: 10px; right: 14px;
+    font-size: 14px; opacity: 0; transition: opacity 0.2s;
+  }
+  .stat-card-link:hover .stat-arrow { opacity: 1; }
   .stat-icon { font-size: 28px; }
   .stat-value { font-family: 'Playfair Display', serif; font-size: 36px; font-weight: 700; margin: 8px 0; }
   .stat-label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
@@ -241,6 +255,14 @@ window.addEventListener('load', () => {
 
   @media (max-width: 768px) { .cal-grid.week { grid-template-columns: 36px repeat(7, 1fr); } .cal-event { font-size: 9px; } #google-bar { left: 0; } }
 
+  /* DASHBOARD BACK BUTTON */
+  .btn-dashboard {
+    background: none; border: 1px solid var(--border); color: var(--muted);
+    border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 12px;
+    font-family: 'DM Sans', sans-serif; transition: all 0.2s; white-space: nowrap;
+  }
+  .btn-dashboard:hover { border-color: var(--accent); color: var(--accent); background: rgba(200,169,110,0.08); }
+
   /* PAGE */
   .page { display: none; }
   .page.active { display: block; }
@@ -303,7 +325,10 @@ window.addEventListener('load', () => {
   <div id="page-acquirenti" class="page">
     <div class="section-header">
       <div><h1 class="section-title">Acquirenti</h1><p class="section-sub" id="acq-count"></p></div>
-      <button class="btn btn-primary" onclick="openModal('acquirente')">+ Nuovo Acquirente</button>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-dashboard" onclick="showPage('dashboard')">◈ Dashboard</button>
+        <button class="btn btn-primary" onclick="openModal('acquirente')">+ Nuovo Acquirente</button>
+      </div>
     </div>
     <div id="list-acquirenti"></div>
   </div>
@@ -312,7 +337,10 @@ window.addEventListener('load', () => {
   <div id="page-proprietari" class="page">
     <div class="section-header">
       <div><h1 class="section-title">Proprietari</h1><p class="section-sub" id="prop-count"></p></div>
-      <button class="btn btn-primary" onclick="openModal('proprietario')">+ Nuovo Proprietario</button>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-dashboard" onclick="showPage('dashboard')">◈ Dashboard</button>
+        <button class="btn btn-primary" onclick="openModal('proprietario')">+ Nuovo Proprietario</button>
+      </div>
     </div>
     <div id="list-proprietari"></div>
   </div>
@@ -321,7 +349,10 @@ window.addEventListener('load', () => {
   <div id="page-immobili" class="page">
     <div class="section-header">
       <div><h1 class="section-title">Immobili</h1><p class="section-sub" id="imm-count"></p></div>
-      <button class="btn btn-primary" onclick="openModal('immobile')">+ Nuovo Immobile</button>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-dashboard" onclick="showPage('dashboard')">◈ Dashboard</button>
+        <button class="btn btn-primary" onclick="openModal('immobile')">+ Nuovo Immobile</button>
+      </div>
     </div>
     <div id="list-immobili"></div>
   </div>
@@ -330,7 +361,10 @@ window.addEventListener('load', () => {
   <div id="page-altri" class="page">
     <div class="section-header">
       <div><h1 class="section-title">Altri Contatti</h1><p class="section-sub" id="altri-count"></p></div>
-      <button class="btn btn-primary" onclick="openModal('altro')">+ Nuovo Contatto</button>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-dashboard" onclick="showPage('dashboard')">◈ Dashboard</button>
+        <button class="btn btn-primary" onclick="openModal('altro')">+ Nuovo Contatto</button>
+      </div>
     </div>
     <div id="list-altri"></div>
   </div>
@@ -339,7 +373,8 @@ window.addEventListener('load', () => {
   <div id="page-richieste" class="page">
     <div class="section-header">
       <div><h1 class="section-title">Richieste</h1><p class="section-sub" id="rich-count"></p></div>
-      <div style="display:flex;gap:10px">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="btn-dashboard" onclick="showPage('dashboard')">◈ Dashboard</button>
         <button class="btn-sm btn-gcal" style="padding:8px 14px;font-size:13px" onclick="matchRichieste()">🔍 Incrocia con Immobili</button>
         <button class="btn btn-primary" onclick="openModal('richiesta')">+ Nuova Richiesta</button>
       </div>
@@ -355,7 +390,10 @@ window.addEventListener('load', () => {
         <h1 class="section-title">Attività</h1>
         <div style="display:flex;gap:10px;margin-top:8px" id="act-badges"></div>
       </div>
-      <button class="btn btn-primary" onclick="openModal('attivita')">+ Nuova Attività</button>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-dashboard" onclick="showPage('dashboard')">◈ Dashboard</button>
+        <button class="btn btn-primary" onclick="openModal('attivita')">+ Nuova Attività</button>
+      </div>
     </div>
     <div id="list-attivita"></div>
   </div>
@@ -363,7 +401,10 @@ window.addEventListener('load', () => {
   <!-- CALENDARIO -->
   <div id="page-calendario" class="page">
     <div class="section-header" style="flex-wrap:wrap;gap:12px">
-      <div><h1 class="section-title">Calendario</h1></div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <h1 class="section-title">Calendario</h1>
+        <button class="btn-dashboard" onclick="showPage('dashboard')">◈ Dashboard</button>
+      </div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <div class="cal-view-toggle">
           <button class="cal-view-btn active" id="btn-view-week" onclick="setCalView('week')">Settimana</button>
@@ -380,7 +421,10 @@ window.addEventListener('load', () => {
 
   <!-- IMPOSTAZIONI -->
   <div id="page-impostazioni" class="page">
-    <h1 class="section-title" style="margin-bottom:8px">Impostazioni</h1>
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:8px">
+      <h1 class="section-title">Impostazioni</h1>
+      <button class="btn-dashboard" onclick="showPage('dashboard')">◈ Dashboard</button>
+    </div>
     <p class="section-sub" style="margin-bottom:28px">Configura l'integrazione con Google Calendar</p>
     <div class="col-card" style="max-width:600px">
       <div class="col-title">Google Calendar API</div>
@@ -734,18 +778,19 @@ function toast(msg, type='green') {
 function renderDashboard() {
   if(!document.getElementById('stats-grid')) return;
   const stats = [
-    { l:'Acquirenti', v:db.acquirenti.length, c:'#60a5fa', i:'👥' },
-    { l:'Proprietari', v:db.proprietari.length, c:'#4ade80', i:'🏠' },
-    { l:'Immobili', v:db.immobili.length, c:'#c8a96e', i:'🏢' },
-    { l:'Richieste', v:(db.richieste||[]).length, c:'#a78bfa', i:'🔍' },
-    { l:'In Trattativa', v:db.immobili.filter(i=>i.stato==='trattativa').length, c:'#fb923c', i:'🤝' },
-    { l:'Totale Attività', v:db.attivita.length, c:'#60a5fa', i:'📋' },
+    { l:'Acquirenti', v:db.acquirenti.length, c:'#60a5fa', i:'👥', page:'acquirenti' },
+    { l:'Proprietari', v:db.proprietari.length, c:'#4ade80', i:'🏠', page:'proprietari' },
+    { l:'Immobili', v:db.immobili.length, c:'#c8a96e', i:'🏢', page:'immobili' },
+    { l:'Richieste', v:(db.richieste||[]).length, c:'#a78bfa', i:'🔍', page:'richieste' },
+    { l:'In Trattativa', v:db.immobili.filter(i=>i.stato==='trattativa').length, c:'#fb923c', i:'🤝', page:'immobili' },
+    { l:'Totale Attività', v:db.attivita.length, c:'#60a5fa', i:'📋', page:'attivita' },
   ];
   document.getElementById('stats-grid').innerHTML = stats.map(s => `
-    <div class="stat-card">
+    <div class="stat-card stat-card-link" onclick="showPage('${s.page}')" title="Vai a ${s.l}">
       <div class="stat-icon">${s.i}</div>
       <div class="stat-value" style="color:${s.c}">${s.v}</div>
       <div class="stat-label">${s.l}</div>
+      <div class="stat-arrow" style="color:${s.c}">→</div>
     </div>`).join('');
 
   document.getElementById('dash-attivita').innerHTML = db.attivita.slice(-5).reverse().map(a => {
@@ -803,6 +848,7 @@ function personaCard(p, tipo) {
         <div class="card-sub">✉️ ${p.email||''}</div>
         ${p.budget ? `<div style="color:var(--accent);font-size:13px;margin-top:4px">💰 Budget: €${p.budget}</div>` : ''}
         ${p.ruolo ? `<div style="color:var(--blue);font-size:12px;margin-top:2px">🏷️ ${p.ruolo}</div>` : ''}
+        ${p.driveUrl ? `<a href="${p.driveUrl}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;margin-top:6px;color:#34a853;font-size:12px;text-decoration:none;background:rgba(52,168,83,0.1);border:1px solid rgba(52,168,83,0.3);border-radius:6px;padding:3px 8px;">📁 Cartella Drive</a>` : ''}
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
         ${badge(mieAtt.length + ' attività', mieAtt.length>0?'#4ade80':'#6b6b8a')}
@@ -811,6 +857,7 @@ function personaCard(p, tipo) {
           <button class="actions-toggle" onclick="toggleDropdown('dd-${uid}')">⋯</button>
           <div class="actions-dropdown" id="dd-${uid}">
             <button class="edit" onclick="closeDropdown('dd-${uid}');openModal('${tipo}', ${p.id})">✏️ Modifica</button>
+            <button onclick="closeDropdown('dd-${uid}');openDriveModal('${tipo}', ${p.id})">📁 Cartella Drive</button>
             <button onclick="closeDropdown('dd-${uid}');openModal('attivita', null, '${tipo}', ${p.id})">➕ Attività</button>
             <button class="del" onclick="closeDropdown('dd-${uid}');deletePersona('${tipo}', ${p.id})">🗑 Elimina</button>
           </div>
@@ -1211,15 +1258,17 @@ function renderImmobili() {
             ${badge(i.stato, statoColor(i.stato))}
             ${i.contratto ? badge(contrattoIcon(i.contratto)+' '+i.contratto, contrattoColor(i.contratto)) : ''}
           </div>
-          <div style="margin-top:10px;display:flex;gap:16px;flex-wrap:wrap">
+          <div style="margin-top:10px;display:flex;gap:16px;flex-wrap:wrap;align-items:center">
             ${prop ? `<span style="color:var(--muted);font-size:12px">👤 Proprietario: <span style="color:#60a5fa">${prop.nome} ${prop.cognome}</span></span>` : ''}
             ${acq ? `<span style="color:var(--muted);font-size:12px">🤝 Acquirente: <span style="color:#4ade80">${acq.nome} ${acq.cognome}</span></span>` : ''}
+            ${i.driveUrl ? `<a href="${i.driveUrl}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;color:#34a853;font-size:12px;text-decoration:none;background:rgba(52,168,83,0.1);border:1px solid rgba(52,168,83,0.3);border-radius:6px;padding:3px 8px;">📁 Cartella Drive</a>` : ''}
           </div>
         </div>
         <div class="actions-wrap">
           <button class="actions-toggle" onclick="toggleDropdown('dd-imm-${i.id}')">⋯</button>
           <div class="actions-dropdown" id="dd-imm-${i.id}">
             <button class="edit" onclick="closeDropdown('dd-imm-${i.id}');openModal('immobile', ${i.id})">✏️ Modifica</button>
+            <button onclick="closeDropdown('dd-imm-${i.id}');openDriveModal('immobile', ${i.id})">📁 Cartella Drive</button>
             <button class="del" onclick="closeDropdown('dd-imm-${i.id}');deleteImmobile(${i.id})">🗑 Elimina</button>
           </div>
         </div>
@@ -1231,6 +1280,68 @@ function renderImmobili() {
 function deleteImmobile(id) {
   db.immobili = db.immobili.filter(i => i.id !== id);
   saveDb(); renderImmobili(); toast('Immobile eliminato');
+}
+
+// ─────────────────────────────────────────────
+//  DRIVE MODAL
+// ─────────────────────────────────────────────
+let driveModalTipo = null;
+let driveModalId = null;
+
+function openDriveModal(tipo, id) {
+  driveModalTipo = tipo;
+  driveModalId = id;
+  let item, nome;
+  if(tipo === 'immobile') {
+    item = db.immobili.find(i => i.id === id);
+    nome = item ? item.titolo : 'Immobile';
+  } else {
+    const arr = tipo==='acquirente' ? db.acquirenti : tipo==='proprietario' ? db.proprietari : db.altri;
+    item = arr.find(p => p.id === id);
+    nome = item ? `${item.nome} ${item.cognome}` : 'Contatto';
+  }
+  const currentUrl = item ? (item.driveUrl || '') : '';
+
+  document.getElementById('modal-title').textContent = '📁 Cartella Drive';
+  document.getElementById('modal-body').innerHTML = `
+    <div style="margin-bottom:16px">
+      <div style="font-size:14px;color:var(--text);margin-bottom:4px">Collega una cartella Google Drive a:</div>
+      <div style="font-family:'Playfair Display',serif;font-size:16px;color:var(--accent)">${nome}</div>
+    </div>
+    <div style="background:rgba(52,168,83,0.08);border:1px solid rgba(52,168,83,0.25);border-radius:10px;padding:14px;margin-bottom:20px;font-size:13px;color:var(--muted);line-height:1.6">
+      <strong style="color:#34a853">Come fare:</strong><br>
+      1. Apri <a href="https://drive.google.com" target="_blank" style="color:#34a853">Google Drive</a><br>
+      2. Crea una cartella (es. "<em>${nome}</em>")<br>
+      3. Click destro sulla cartella → <strong>Condividi → Copia link</strong><br>
+      4. Incolla il link qui sotto
+    </div>
+    <div class="form-group">
+      <label class="form-label">Link cartella Google Drive</label>
+      <input type="url" class="form-control" id="f-drive-url"
+        placeholder="https://drive.google.com/drive/folders/..."
+        value="${currentUrl}">
+    </div>
+    ${currentUrl ? `<a href="${currentUrl}" target="_blank" class="btn btn-primary" style="display:block;text-align:center;text-decoration:none;margin-bottom:12px;background:rgba(52,168,83,0.8)">📂 Apri Cartella Drive</a>` : ''}
+    <button class="btn btn-primary" style="width:100%" onclick="saveDriveUrl()">💾 Salva Link</button>
+    ${currentUrl ? `<button style="width:100%;margin-top:8px;background:none;border:1px solid var(--red);color:var(--red);border-radius:10px;padding:10px;cursor:pointer;font-family:'DM Sans',sans-serif" onclick="saveDriveUrl(true)">🗑 Rimuovi Link</button>` : ''}
+  `;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function saveDriveUrl(remove = false) {
+  const url = remove ? '' : document.getElementById('f-drive-url').value.trim();
+  if(driveModalTipo === 'immobile') {
+    db.immobili = db.immobili.map(i => i.id === driveModalId ? {...i, driveUrl: url} : i);
+    saveDb(); document.getElementById('modal-overlay').classList.remove('open');
+    renderImmobili(); toast(remove ? 'Link rimosso' : '✓ Link Drive salvato!');
+  } else {
+    const arr = driveModalTipo==='acquirente' ? 'acquirenti' : driveModalTipo==='proprietario' ? 'proprietari' : 'altri';
+    db[arr] = db[arr].map(p => p.id === driveModalId ? {...p, driveUrl: url} : p);
+    saveDb(); document.getElementById('modal-overlay').classList.remove('open');
+    renderPersone(arr === 'altri' ? null : arr);
+    if(arr === 'altri') renderAltri();
+    toast(remove ? 'Link rimosso' : '✓ Link Drive salvato!');
+  }
 }
 
 // ─────────────────────────────────────────────
