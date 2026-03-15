@@ -114,7 +114,7 @@ window.addEventListener('load', () => {
   }
 
   /* STATS GRID */
-  .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px; }
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 32px; }
   .stat-card {
     background: var(--card); border: 1px solid var(--border); border-radius: 12px;
     padding: 24px; text-align: center;
@@ -890,17 +890,19 @@ function renderDashboard() {
   if(!document.getElementById('stats-grid')) return;
   const incrociCount = computeIncroci().reduce((s,r) => s + r.matches.length, 0);
   const stats = [
-    { l:'Acquirenti', v:db.acquirenti.length, c:'#60a5fa', i:'👥', page:'acquirenti' },
-    { l:'Proprietari', v:db.proprietari.length, c:'#4ade80', i:'🏠', page:'proprietari' },
-    { l:'Immobili', v:db.immobili.length, c:'#c8a96e', i:'🏢', page:'immobili' },
-    { l:'Richieste', v:(db.richieste||[]).length, c:'#a78bfa', i:'🔍', page:'richieste' },
-    { l:'Incroci', v:incrociCount, c:'#f472b6', i:'🔀', page:'incroci' },
-    { l:'Totale Attività', v:db.attivita.length, c:'#60a5fa', i:'📋', page:'attivita' },
+    { l:'Acquirenti',    v:db.acquirenti.length,                                      c:'#60a5fa', i:'👥', page:'acquirenti' },
+    { l:'Proprietari',   v:db.proprietari.length,                                     c:'#4ade80', i:'🏠', page:'proprietari' },
+    { l:'Immobili',      v:db.immobili.length,                                        c:'#c8a96e', i:'🏢', page:'immobili' },
+    { l:'In Trattativa', v:db.immobili.filter(i=>i.stato==='trattativa').length,      c:'#fb923c', i:'🤝', page:'immobili' },
+    { l:'Richieste',     v:(db.richieste||[]).length,                                 c:'#a78bfa', i:'🔍', page:'richieste' },
+    { l:'Incroci',       v:incrociCount,                                              c:'#f472b6', i:'🔀', page:'incroci' },
+    { l:'Totale Attività',v:db.attivita.length,                                       c:'#60a5fa', i:'📋', page:'attivita' },
+    { l:'Calendario',    v:'',                                                        c:'#34d399', i:'📅', page:'calendario' },
   ];
   document.getElementById('stats-grid').innerHTML = stats.map(s => `
     <div class="stat-card stat-card-link" onclick="showPage('${s.page}')" title="Vai a ${s.l}">
       <div class="stat-icon">${s.i}</div>
-      <div class="stat-value" style="color:${s.c}">${s.v}</div>
+      ${s.v !== '' ? `<div class="stat-value" style="color:${s.c}">${s.v}</div>` : `<div style="height:36px"></div>`}
       <div class="stat-label">${s.l}</div>
       <div class="stat-arrow" style="color:${s.c}">→</div>
     </div>`).join('');
