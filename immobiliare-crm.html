@@ -223,21 +223,30 @@ window.addEventListener('load', () => {
   .actions-dropdown button.gcal { color: var(--blue); }
 
   /* CALENDARIO */
-  .cal-grid { display: grid; gap: 1px; background: var(--border); border-radius: 12px; overflow: hidden; }
-  .cal-grid.week { grid-template-columns: 50px repeat(7, 1fr); }
-  .cal-grid.day  { grid-template-columns: 50px 1fr; }
-  .cal-header { background: var(--card); padding: 10px 6px; text-align: center; font-size: 12px; font-weight: 600; }
-  .cal-header.today { color: var(--accent); }
-  .cal-time { background: var(--card); padding: 4px 6px; text-align: right; font-size: 10px; color: var(--muted); min-height: 28px; display:flex; align-items:center; justify-content:flex-end; }
-  .cal-time.half { color: transparent; min-height: 24px; border-top: 1px dashed rgba(255,255,255,0.04); }
-  .cal-cell { background: var(--card); min-height: 28px; padding: 1px 2px; position: relative; }
-  .cal-cell.half { min-height: 24px; border-top: 1px dashed rgba(255,255,255,0.04); }
-  .cal-cell.today-col { background: rgba(200,169,110,0.05); }
-  .cal-event { border-radius: 4px; padding: 2px 5px; font-size: 11px; margin-bottom: 1px; cursor: pointer; line-height: 1.3; }
-  .cal-event:hover { opacity: 0.85; }
+  .cal-wrap { display:grid; gap:1px; background:var(--border); border-radius:12px; overflow:hidden; }
+  .cal-wrap.week { grid-template-columns:50px repeat(7,1fr); }
+  .cal-wrap.day  { grid-template-columns:50px 1fr; }
+  .cal-header { background:var(--card); padding:10px 6px; text-align:center; font-size:12px; font-weight:600; }
+  .cal-header.today { color:var(--accent); }
+  .cal-times { background:var(--card); }
+  .cal-hour-label { height:52px; display:flex; align-items:flex-start; justify-content:flex-end; padding:4px 6px 0; font-size:10px; color:var(--muted); box-sizing:border-box; border-top:1px solid var(--border); }
+  .cal-hour-label:first-child { border-top:none; }
+  .cal-day-col { background:var(--card); position:relative; }
+  .cal-day-col.today-col { background:rgba(200,169,110,0.04); }
+  .cal-hour-row { height:52px; border-top:1px solid var(--border); box-sizing:border-box; pointer-events:none; }
+  .cal-hour-row:first-child { border-top:none; }
+  .cal-half-line { position:absolute; left:0; right:0; border-top:1px dashed rgba(255,255,255,0.06); pointer-events:none; }
+  .cal-event {
+    position:absolute; left:2px; right:2px; border-radius:5px;
+    padding:3px 6px; font-size:11px; cursor:pointer; line-height:1.4;
+    overflow:hidden; z-index:3; box-sizing:border-box; min-height:20px;
+    border-left:3px solid transparent; transition:filter 0.15s;
+  }
+  .cal-event:hover { filter:brightness(1.2); }
   .cal-view-toggle { display:flex; gap:6px; }
   .cal-view-btn { background:none; border:1px solid var(--border); color:var(--muted); border-radius:8px; padding:5px 12px; cursor:pointer; font-size:12px; font-family:'DM Sans',sans-serif; transition:all 0.2s; }
   .cal-view-btn.active { background:var(--accent); color:var(--bg); border-color:var(--accent); font-weight:600; }
+  @media (max-width:768px) { .cal-wrap.week { grid-template-columns:36px repeat(7,1fr); } .cal-event { font-size:9px; } }
 
   /* GOOGLE BAR — bottom fixed */
   #google-bar {
@@ -1355,6 +1364,9 @@ function renderCalendario() {
   const el = document.getElementById('cal-grid');
   const labelEl = document.getElementById('cal-week-label');
   if(!el) return;
+
+  const HOURS = 24;
+  const HOUR_PX = 52;
   const todayStr = fmtDate(new Date());
   const dayNames = ['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
   const opts = { day:'numeric', month:'long' };
@@ -1366,83 +1378,74 @@ function renderCalendario() {
     if(labelEl) labelEl.textContent = d.toLocaleDateString('it-IT', { weekday:'long', day:'numeric', month:'long' });
   } else {
     days = getWeekDays(calWeekOffset);
-    if(labelEl) labelEl.textContent = `${days[0].toLocaleDateString('it-IT', opts)} – ${days[6].toLocaleDateString('it-IT', opts)}`;
+    if(labelEl) labelEl.textContent = `${days[0].toLocaleDateString('it-IT', opts)} \u2013 ${days[6].toLocaleDateString('it-IT', opts)}`;
   }
 
-  // Raggruppa attività per giorno + ora:minuto (slot 30 min)
-  // Ogni attività occupa gli slot da ora a oraFine
-  const attBySlot = {}; // key: "YYYY-MM-DD_HH:MM" → array di {attivita, isStart, spanCount}
-  db.attivita.forEach(a => {
-    const ora = a.ora || '09:00';
-    const [hh, mm] = ora.split(':').map(Number);
-    const startSlot = hh * 2 + (mm >= 30 ? 1 : 0); // slot index (0-47)
+  const toMin = (t) => { const [h,m] = (t||'00:00').split(':').map(Number); return h*60+m; };
+  const minToPx = (min) => (min / 60) * HOUR_PX;
 
-    // Calcola slot finale
-    let endSlot = startSlot + 2; // default +1 ora = 2 slot
-    if(a.oraFine) {
-      const [eh, em] = a.oraFine.split(':').map(Number);
-      endSlot = eh * 2 + (em >= 30 ? 1 : 0);
-      if(endSlot <= startSlot) endSlot = startSlot + 1;
-    }
-    const spanCount = endSlot - startSlot;
+  const attByDay = {};
+  days.forEach(d => { attByDay[fmtDate(d)] = []; });
+  db.attivita.forEach(a => { if(attByDay[a.data] !== undefined) attByDay[a.data].push(a); });
 
-    // Inserisce solo nello slot di inizio con info span
-    const slotH = Math.floor(startSlot / 2);
-    const slotM = (startSlot % 2) === 1 ? '30' : '00';
-    const key = `${a.data}_${String(slotH).padStart(2,'0')}:${slotM}`;
-    if(!attBySlot[key]) attBySlot[key] = [];
-    attBySlot[key].push({ a, spanCount });
+  const totalH = HOURS * HOUR_PX;
+  let html = `<div class="cal-wrap ${calView}" style="min-width:${calView==='day'?'300px':'540px'}">`;
 
-    // Marca gli slot intermedi come "occupati" per non ripetere l'evento
-    for(let s = startSlot + 1; s < endSlot && s < 48; s++) {
-      const sH = Math.floor(s / 2);
-      const sM = (s % 2) === 1 ? '30' : '00';
-      const sk = `${a.data}_${String(sH).padStart(2,'0')}:${sM}`;
-      if(!attBySlot[sk]) attBySlot[sk] = [];
-      attBySlot[sk].push({ a, isSpan: true });
-    }
-  });
-
-  const cols = calView === 'day' ? 1 : 7;
-  let html = `<div class="cal-grid ${calView}" style="min-width:${calView==='day'?'320px':'560px'}">`;
-
-  // Header
   html += `<div class="cal-header" style="background:var(--bg)"></div>`;
-  days.forEach((d, i) => {
+  days.forEach((d,i) => {
     const isToday = fmtDate(d) === todayStr;
-    const dname = calView === 'day' ? d.toLocaleDateString('it-IT',{weekday:'long'}) : dayNames[i];
-    html += `<div class="cal-header${isToday?' today':''}">${dname}<br><span style="font-size:${calView==='day'?'20':'15'}px;font-weight:700">${d.getDate()}</span></div>`;
+    const dname = calView==='day' ? d.toLocaleDateString('it-IT',{weekday:'long'}) : dayNames[i];
+    html += `<div class="cal-header${isToday?' today':''}">${dname}<br><span style="font-size:${calView==='day'?'18':'14'}px;font-weight:700">${d.getDate()}</span></div>`;
   });
 
-  // Righe: ogni ora ha due slot (HH:00 e HH:30)
-  for(let h = 0; h < 24; h++) {
-    for(let half = 0; half < 2; half++) {
-      const mm = half === 0 ? '00' : '30';
-      const isHalf = half === 1;
-      const timeLabel = isHalf ? '' : `${String(h).padStart(2,'0')}:00`;
-      html += `<div class="cal-time${isHalf?' half':''}">${timeLabel}</div>`;
-      days.forEach(d => {
-        const ds = fmtDate(d);
-        const isToday = ds === todayStr;
-        const key = `${ds}_${String(h).padStart(2,'0')}:${mm}`;
-        const events = (attBySlot[key] || []).filter(e => !e.isSpan);
-        const evHtml = events.map(({a, spanCount}) => {
-          const p = getPersona(a.personaTipo, a.personaId);
-          const col = tipoColor(a.tipo);
-          const icon = a.tipo==='telefonata'?'📞':a.tipo==='messaggio'?'💬':'📅';
-          const slotPx = 26;
-          const heightPx = spanCount > 1 ? (spanCount * slotPx - 2) : slotPx;
-          const fineLabel = a.oraFine ? ` → ${a.oraFine}` : '';
-          return `<div class="cal-event" style="background:${col}22;border-left:3px solid ${col};color:${col};min-height:${heightPx}px;overflow:hidden;z-index:2"
-            onclick="showAttivitaPopup(${a.id}, event)">
-            <span style="font-size:11px;font-weight:600">${icon} ${a.ora||''}${fineLabel}</span><br>
-            <span style="color:var(--text);font-size:10px">${p ? p.nome : ''} ${(a.note||'').slice(0,15)}</span>
-          </div>`;
-        }).join('');
-        html += `<div class="cal-cell${isHalf?' half':''}${isToday?' today-col':''}">${evHtml}</div>`;
-      });
-    }
+  let timesHtml = `<div class="cal-times" style="height:${totalH}px">`;
+  for(let h=0; h<HOURS; h++) {
+    timesHtml += `<div class="cal-hour-label">${String(h).padStart(2,'0')}:00</div>`;
   }
+  timesHtml += '</div>';
+  html += timesHtml;
+
+  days.forEach(d => {
+    const ds = fmtDate(d);
+    const isToday = ds === todayStr;
+    const eventi = attByDay[ds] || [];
+
+    let rowsHtml = '';
+    for(let h=0; h<HOURS; h++) {
+      rowsHtml += `<div class="cal-hour-row"></div>`;
+      const halfTop = minToPx(h*60+30);
+      rowsHtml += `<div class="cal-half-line" style="top:${halfTop}px"></div>`;
+    }
+
+    let eventsHtml = '';
+    eventi.forEach(a => {
+      const col = tipoColor(a.tipo);
+      const icon = a.tipo==='telefonata'?'\u{1F4DE}':a.tipo==='messaggio'?'\u{1F4AC}':'\u{1F4C5}';
+      const p = getPersona(a.personaTipo, a.personaId);
+      const startMin = toMin(a.ora || '09:00');
+      let endMin;
+      if(a.oraFine) {
+        endMin = toMin(a.oraFine);
+        if(endMin <= startMin) endMin = startMin + 30;
+      } else if(a.durata) {
+        const match = a.durata.match(/(\d+)/);
+        let dur = match ? parseInt(match[1]) : 30;
+        if(a.durata.toLowerCase().includes('h') || a.durata.toLowerCase().includes('ora')) dur *= 60;
+        endMin = startMin + dur;
+      } else {
+        endMin = startMin + 60;
+      }
+      endMin = Math.min(endMin, HOURS * 60);
+      const topPx = minToPx(startMin);
+      const heightPx = Math.max(20, minToPx(endMin - startMin) - 2);
+      const fineLabel = a.oraFine ? ` \u2192 ${a.oraFine}` : '';
+      const showDetail = heightPx > 30;
+      eventsHtml += `<div class="cal-event" style="top:${topPx}px;height:${heightPx}px;background:${col}28;border-left-color:${col};color:${col}" onclick="showAttivitaPopup(${a.id}, event)"><span style="font-weight:700;font-size:10px">${icon} ${a.ora||''}${fineLabel}</span>${showDetail?`<br><span style="color:var(--text);font-size:10px">${p?p.nome:''} ${(a.note||'').slice(0,18)}</span>`:''}</div>`;
+    });
+
+    html += `<div class="cal-day-col${isToday?' today-col':''}" style="height:${totalH}px">${rowsHtml}${eventsHtml}</div>`;
+  });
+
   html += '</div>';
   el.innerHTML = html;
 }
