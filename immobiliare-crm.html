@@ -9,13 +9,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script type="module">
 // ─────────────────────────────────────────────
-//  FIREBASE INIT + AUTH
+//  FIREBASE INIT (solo Firestore, no Auth)
 // ─────────────────────────────────────────────
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
 import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
-
-const ALLOWED_EMAIL = 'marcoalpedretti@gmail.com';
 
 const firebaseConfig = {
   apiKey: "AIzaSyBeGJTlDWyK2PpbvOvUrJAw29T5s5seGiE",
@@ -28,91 +25,16 @@ const firebaseConfig = {
 
 const firebaseApp = initializeApp(firebaseConfig);
 const firestore = getFirestore(firebaseApp);
-const auth = getAuth(firebaseApp);
 const DB_DOC = doc(firestore, 'crm', 'dati');
 
-// Rendi disponibili globalmente
 window._firestore = firestore;
 window._dbDoc = DB_DOC;
 window._setDoc = setDoc;
 window._onSnapshot = onSnapshot;
-window._auth = auth;
+window._firebaseReady = true;
 
-// Gestione login tramite evento
-document.addEventListener('crm-login', async () => {
-  const provider = new GoogleAuthProvider();
-  provider.addScope('email');
-  provider.addScope('profile');
-  const btn = document.getElementById('login-btn');
-  const errEl = document.getElementById('login-error');
-  if(btn) { btn.disabled = true; btn.innerHTML = '⏳ Accesso in corso...'; }
-  if(errEl) errEl.textContent = '';
-  try {
-    await signInWithPopup(auth, provider);
-  } catch(e) {
-    const code = e.code || '';
-    if(code === 'auth/popup-blocked') {
-      // Popup bloccato → usa redirect
-      if(errEl) errEl.textContent = 'Popup bloccato, reindirizzamento...';
-      setTimeout(() => signInWithRedirect(auth, provider), 800);
-    } else if(code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
-      // Utente ha chiuso — non fare nulla
-      if(btn) { btn.disabled = false; btn.innerHTML = svgGoogle + ' Accedi con Google'; }
-    } else {
-      if(errEl) errEl.textContent = 'Errore (' + code + '): ' + (e.message || '');
-      if(btn) { btn.disabled = false; btn.innerHTML = svgGoogle + ' Accedi con Google'; }
-    }
-  }
-});
-
-const svgGoogle = `<svg width="18" height="18" viewBox="0 0 18 18"><path fill="currentColor" d="M9 3.48c1.69 0 2.83.73 3.48 1.34l2.54-2.48C13.46.89 11.43 0 9 0 5.48 0 2.44 2.02.96 4.96l2.91 2.26C4.6 5.05 6.62 3.48 9 3.48z"/><path fill="currentColor" d="M17.64 9.2c0-.74-.06-1.28-.19-1.84H9v3.34h4.96c-.1.83-.64 2.08-1.84 2.92l2.84 2.2c1.7-1.57 2.68-3.88 2.68-6.62z"/><path fill="currentColor" d="M3.88 10.78A5.54 5.54 0 0 1 3.58 9c0-.62.11-1.22.29-1.78L.96 4.96A9 9 0 0 0 0 9c0 1.45.35 2.82.96 4.04l2.92-2.26z"/><path fill="currentColor" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.84-2.2c-.76.53-1.78.9-3.12.9-2.38 0-4.4-1.57-5.12-3.74L.96 13.04C2.44 15.98 5.48 18 9 18z"/></svg>`;
-
-// Logout tramite evento
-document.addEventListener('crm-logout', () => signOut(auth));
-
-// Controlla risultato redirect al ritorno sulla pagina
-getRedirectResult(auth).then(result => {
-  // Se arriviamo dal redirect, result contiene l'utente
-  // onAuthStateChanged lo gestisce automaticamente
-}).catch(e => {
-  if(e.code && e.code !== 'auth/no-current-user') {
-    const errEl = document.getElementById('login-error');
-    if(errEl) errEl.textContent = 'Errore redirect (' + e.code + ')';
-  }
-});
-
-// Listener stato autenticazione
-onAuthStateChanged(auth, (user) => {
-  const loginScreen = document.getElementById('login-screen');
-  const mainApp = document.getElementById('main-app');
-
-  if(user && user.email === ALLOWED_EMAIL) {
-    // Utente autorizzato
-    if(loginScreen) loginScreen.style.display = 'none';
-    if(mainApp) mainApp.style.display = 'block';
-
-    // Mostra info utente
-    const userEl = document.getElementById('auth-user');
-    if(userEl) userEl.textContent = user.email;
-
-    // Avvia Firebase sync
-    window._firebaseReady = true;
-    if(window._startFirebaseSync) window._startFirebaseSync();
-
-  } else if(user && user.email !== ALLOWED_EMAIL) {
-    // Email non autorizzata
-    signOut(auth).then(() => {
-      if(loginScreen) loginScreen.style.display = 'flex';
-      if(mainApp) mainApp.style.display = 'none';
-      const el = document.getElementById('login-error');
-      if(el) el.textContent = `Account ${user.email} non autorizzato.`;
-    });
-
-  } else {
-    // Non loggato
-    if(loginScreen) loginScreen.style.display = 'flex';
-    if(mainApp) mainApp.style.display = 'none';
-  }
+window.addEventListener('load', () => {
+  if(window._startFirebaseSync) window._startFirebaseSync();
 });
 </script>
 <style>
@@ -370,15 +292,17 @@ onAuthStateChanged(auth, (user) => {
 <body>
 
 <!-- LOGIN SCREEN -->
-<div id="login-screen" style="display:flex;position:fixed;inset:0;background:var(--bg);z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:24px">
-  <div style="text-align:center;max-width:340px;padding:40px;background:var(--card);border:1px solid var(--border);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.6)">
+<div id="login-screen" style="display:flex;position:fixed;inset:0;background:var(--bg);z-index:9999;align-items:center;justify-content:center">
+  <div style="text-align:center;max-width:320px;width:90%;padding:40px;background:var(--card);border:1px solid var(--border);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.6)">
     <div style="font-family:'Playfair Display',serif;font-size:28px;color:var(--accent);margin-bottom:4px">Immobilia</div>
     <div style="color:var(--muted);font-size:12px;letter-spacing:2px;text-transform:uppercase;margin-bottom:32px">CRM Immobiliare</div>
-    <div style="width:64px;height:64px;background:rgba(200,169,110,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;font-size:28px">🏠</div>
-    <p style="color:var(--muted);font-size:14px;margin-bottom:24px;line-height:1.6">Accedi con il tuo account Google per continuare</p>
-    <button id="login-btn" onclick="document.dispatchEvent(new Event('crm-login'))" style="width:100%;background:var(--accent);border:none;color:var(--bg);border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:10px">
-      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#fff" d="M9 3.48c1.69 0 2.83.73 3.48 1.34l2.54-2.48C13.46.89 11.43 0 9 0 5.48 0 2.44 2.02.96 4.96l2.91 2.26C4.6 5.05 6.62 3.48 9 3.48z"/><path fill="#fff" d="M17.64 9.2c0-.74-.06-1.28-.19-1.84H9v3.34h4.96c-.1.83-.64 2.08-1.84 2.92l2.84 2.2c1.7-1.57 2.68-3.88 2.68-6.62z"/><path fill="#fff" d="M3.88 10.78A5.54 5.54 0 0 1 3.58 9c0-.62.11-1.22.29-1.78L.96 4.96A9 9 0 0 0 0 9c0 1.45.35 2.82.96 4.04l2.92-2.26z"/><path fill="#fff" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.84-2.2c-.76.53-1.78.9-3.12.9-2.38 0-4.4-1.57-5.12-3.74L.96 13.04C2.44 15.98 5.48 18 9 18z"/></svg>
-      Accedi con Google
+    <div style="font-size:48px;margin-bottom:20px">🔐</div>
+    <p style="color:var(--muted);font-size:14px;margin-bottom:20px">Inserisci il PIN per accedere</p>
+    <input type="password" id="pin-input" maxlength="6" placeholder="••••••"
+      style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:14px;font-size:22px;text-align:center;letter-spacing:8px;font-family:'DM Sans',sans-serif;box-sizing:border-box;margin-bottom:12px"
+      onkeydown="if(event.key==='Enter')checkPin()">
+    <button onclick="checkPin()" style="width:100%;background:var(--accent);border:none;color:var(--bg);border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">
+      Accedi
     </button>
     <div id="login-error" style="color:#f87171;font-size:12px;margin-top:12px;min-height:16px"></div>
   </div>
@@ -636,8 +560,7 @@ onAuthStateChanged(auth, (user) => {
   </div>
   <div style="display:flex;align-items:center;gap:12px">
     <span id="sync-status" style="font-size:11px;color:var(--muted)">☁️ Connessione cloud...</span>
-    <span id="auth-user" style="font-size:11px;color:#4ade80"></span>
-    <button onclick="document.dispatchEvent(new Event('crm-logout'))" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11px;font-family:'DM Sans',sans-serif" title="Esci">🚪 Esci</button>
+    <button onclick="crmLogout()" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11px;font-family:'DM Sans',sans-serif" title="Esci">🚪 Esci</button>
     <button id="gcal-btn" onclick="handleGCalAuth()">🔗 Connetti Google Calendar</button>
   </div>
 </div>
@@ -2588,7 +2511,7 @@ if (!localStorage.getItem('gcal_email')) {
 CLIENT_ID = localStorage.getItem('gcal_client_id');
 GCAL_EMAIL = localStorage.getItem('gcal_email');
 
-checkGCalCallback(); // Legge il token se siamo tornati dal redirect Google
+checkGCalCallback();
 renderDashboard();
 if(CLIENT_ID) {
   const inp = document.getElementById('client-id-input');
@@ -2597,6 +2520,42 @@ if(CLIENT_ID) {
 if(GCAL_EMAIL) {
   const emailInp = document.getElementById('gcal-email-input');
   if(emailInp) emailInp.value = GCAL_EMAIL;
+}
+
+// ─────────────────────────────────────────────
+//  PIN AUTH
+// ─────────────────────────────────────────────
+const PIN_HASH = '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4'; // PIN: 1234
+
+async function checkPin() {
+  const input = document.getElementById('pin-input');
+  const errEl = document.getElementById('login-error');
+  const val = input ? input.value.trim() : '';
+  if(!val) { if(errEl) errEl.textContent = 'Inserisci il PIN'; return; }
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(val));
+  const hash = Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  if(hash === PIN_HASH) {
+    sessionStorage.setItem('crm_auth', '1');
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('main-app').style.display = 'block';
+  } else {
+    if(errEl) errEl.textContent = 'PIN errato. Riprova.';
+    if(input) { input.value = ''; input.focus(); }
+  }
+}
+
+function crmLogout() {
+  sessionStorage.removeItem('crm_auth');
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('main-app').style.display = 'none';
+  const input = document.getElementById('pin-input');
+  if(input) { input.value = ''; input.focus(); }
+}
+
+// Controlla se già autenticato in questa sessione
+if(sessionStorage.getItem('crm_auth') === '1') {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('main-app').style.display = 'block';
 }
 </script>
 </body>
