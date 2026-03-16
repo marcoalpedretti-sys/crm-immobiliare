@@ -247,6 +247,8 @@ window.addEventListener('load', () => {
   .cal-view-toggle { display:flex; gap:6px; }
   .cal-view-btn { background:none; border:1px solid var(--border); color:var(--muted); border-radius:8px; padding:5px 12px; cursor:pointer; font-size:12px; font-family:'DM Sans',sans-serif; transition:all 0.2s; }
   .cal-view-btn.active { background:var(--accent); color:var(--bg); border-color:var(--accent); font-weight:600; }
+  #cal-date-picker:hover { background:rgba(200,169,110,0.1) !important; }
+  #cal-date-picker::-webkit-calendar-picker-indicator { filter: invert(0.7) sepia(1) saturate(2) hue-rotate(5deg); cursor:pointer; }
   @media (max-width:768px) { .cal-wrap.week { grid-template-columns:36px repeat(7,1fr); } .cal-event { font-size:9px; } }
 
   /* GOOGLE BAR — bottom fixed */
@@ -477,11 +479,12 @@ window.addEventListener('load', () => {
           <button class="cal-view-btn" id="btn-view-day" onclick="setCalView('day')">Giorno</button>
         </div>
         <button class="btn-sm btn-expand" onclick="changeWeek(-1)" style="padding:6px 14px;font-size:16px">‹</button>
-        <label style="color:var(--accent);font-weight:600;font-size:14px;min-width:160px;text-align:center;cursor:pointer;position:relative;display:inline-flex;align-items:center;gap:6px" title="Clicca per scegliere una data">
-          📅 <span id="cal-week-label"></span>
+        <div style="position:relative;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:200px;cursor:pointer" title="Clicca per scegliere una data">
+          <span style="font-size:14px;pointer-events:none">📅</span>
+          <span id="cal-week-label" style="color:var(--accent);font-weight:600;font-size:14px;pointer-events:none"></span>
           <input type="date" id="cal-date-picker" onchange="goToDate(this.value)"
-            style="position:absolute;opacity:0;width:100%;height:100%;top:0;left:0;cursor:pointer">
-        </label>
+            style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;z-index:1">
+        </div>
         <button class="btn-sm btn-expand" onclick="changeWeek(1)" style="padding:6px 14px;font-size:16px">›</button>
         <button class="btn-sm btn-add-act" onclick="changeWeek(0)" style="padding:6px 14px">Oggi</button>
       </div>
@@ -1379,7 +1382,7 @@ function fmtDate(d) {
 
 function renderCalendario() {
   const el = document.getElementById('cal-grid');
-  const labelEl = document.getElementById('cal-week-label');
+  const pickerEl = document.getElementById('cal-date-picker');
   if(!el) return;
 
   const HOURS = 24;
@@ -1392,9 +1395,13 @@ function renderCalendario() {
   if(calView === 'day') {
     const d = new Date(); d.setDate(d.getDate() + calDayOffset); d.setHours(0,0,0,0);
     days = [d];
+    if(pickerEl) pickerEl.value = fmtDate(d);
+    const labelEl = document.getElementById('cal-week-label');
     if(labelEl) labelEl.textContent = d.toLocaleDateString('it-IT', { weekday:'long', day:'numeric', month:'long' });
   } else {
     days = getWeekDays(calWeekOffset);
+    if(pickerEl) pickerEl.value = fmtDate(days[0]);
+    const labelEl = document.getElementById('cal-week-label');
     if(labelEl) labelEl.textContent = `${days[0].toLocaleDateString('it-IT', opts)} \u2013 ${days[6].toLocaleDateString('it-IT', opts)}`;
   }
 
