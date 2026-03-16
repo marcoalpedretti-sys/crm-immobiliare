@@ -13,7 +13,7 @@
 // ─────────────────────────────────────────────
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
 import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
 
 const ALLOWED_EMAIL = 'marcoalpedretti@gmail.com';
 
@@ -44,17 +44,13 @@ document.addEventListener('crm-login', async () => {
   provider.setCustomParameters({ login_hint: ALLOWED_EMAIL, prompt: 'select_account' });
   const btn = document.getElementById('login-btn');
   const errEl = document.getElementById('login-error');
-  if(btn) btn.disabled = true;
+  if(btn) { btn.disabled = true; btn.textContent = 'Accesso in corso...'; }
   try {
-    await signInWithPopup(auth, provider);
+    await signInWithRedirect(auth, provider);
   } catch(e) {
-    if(e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') {
-      try { await signInWithRedirect(auth, provider); } catch(e2) {}
-    } else if(e.code !== 'auth/popup-closed-by-user') {
-      if(errEl) errEl.textContent = 'Errore: ' + (e.message || e.code);
-    }
+    if(errEl) errEl.textContent = 'Errore: ' + (e.message || e.code);
+    if(btn) { btn.disabled = false; btn.textContent = 'Accedi con Google'; }
   }
-  if(btn) btn.disabled = false;
 });
 
 // Logout tramite evento
