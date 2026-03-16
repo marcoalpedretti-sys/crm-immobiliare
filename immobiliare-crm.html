@@ -233,9 +233,10 @@ window.addEventListener('load', () => {
   .cal-hour-label:first-child { border-top:none; }
   .cal-day-col { background:var(--card); position:relative; }
   .cal-day-col.today-col { background:rgba(200,169,110,0.04); }
-  .cal-hour-row { height:52px; border-top:1px solid var(--border); box-sizing:border-box; pointer-events:none; }
+  .cal-hour-row { height:52px; border-top:1px solid var(--border); box-sizing:border-box; }
   .cal-hour-row:first-child { border-top:none; }
-  .cal-half-line { position:absolute; left:0; right:0; border-top:1px dashed rgba(255,255,255,0.06); pointer-events:none; }
+  .cal-hour-row:hover { background:rgba(200,169,110,0.04); }
+  .cal-half-line { position:absolute; left:0; right:0; border-top:1px dashed rgba(255,255,255,0.06); height:26px; }
   .cal-event {
     position:absolute; left:2px; right:2px; border-radius:5px;
     padding:3px 6px; font-size:11px; cursor:pointer; line-height:1.4;
@@ -476,7 +477,11 @@ window.addEventListener('load', () => {
           <button class="cal-view-btn" id="btn-view-day" onclick="setCalView('day')">Giorno</button>
         </div>
         <button class="btn-sm btn-expand" onclick="changeWeek(-1)" style="padding:6px 14px;font-size:16px">‹</button>
-        <span id="cal-week-label" style="color:var(--accent);font-weight:600;font-size:14px;min-width:160px;text-align:center"></span>
+        <label style="color:var(--accent);font-weight:600;font-size:14px;min-width:160px;text-align:center;cursor:pointer;position:relative;display:inline-flex;align-items:center;gap:6px" title="Clicca per scegliere una data">
+          📅 <span id="cal-week-label"></span>
+          <input type="date" id="cal-date-picker" onchange="goToDate(this.value)"
+            style="position:absolute;opacity:0;width:100%;height:100%;top:0;left:0;cursor:pointer">
+        </label>
         <button class="btn-sm btn-expand" onclick="changeWeek(1)" style="padding:6px 14px;font-size:16px">›</button>
         <button class="btn-sm btn-add-act" onclick="changeWeek(0)" style="padding:6px 14px">Oggi</button>
       </div>
@@ -873,6 +878,9 @@ function tipoColor(t) { return t==='telefonata'?'#4ade80':t==='messaggio'?'#60a5
 function statoColor(s) { return s==='disponibile'?'#4ade80':s==='trattativa'?'#fb923c':'#f87171'; }
 function contrattoColor(c) { return c==='vendita'?'#c8a96e':c==='locazione'?'#a78bfa':'#34d399'; }
 function contrattoIcon(c) { return c==='vendita'?'🏷️':c==='locazione'?'📋':'🔑'; }
+function incaricoColor(t) { return t==='incarico'?'#60a5fa':'#fb923c'; }
+function incaricoLabel(t) { return t==='incarico'?'📋 Incarico':'🔔 Notizia concorrenza'; }
+function isIncaricoScaduto(data) { return data && fmtDate(new Date()) > data; }
 function nextId(arr) { return arr.length ? Math.max(...arr.map(x=>x.id)) + 1 : 1; }
 function toast(msg, type='green') {
   const el = document.getElementById('toast');
@@ -983,8 +991,8 @@ function personaCard(p, tipo) {
     <div class="card-header">
       <div>
         <div class="card-name">${p.nome} ${p.cognome}</div>
-        <div class="card-sub">📍 ${p.citta||''} &nbsp;•&nbsp; 📞 ${p.telefono||''}</div>
-        <div class="card-sub">✉️ ${p.email||''}</div>
+        <div class="card-sub">📍 ${p.citta||''} &nbsp;•&nbsp; ${p.telefono ? `<a href="tel:${p.telefono}" style="color:var(--muted);text-decoration:none" onclick="event.stopPropagation()">📞 ${p.telefono}</a>` : ''}</div>
+        <div class="card-sub">${p.email ? `<a href="https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(p.email)}" target="_blank" style="color:var(--muted);text-decoration:none" onclick="event.stopPropagation()">✉️ ${p.email}</a>` : ''}</div>
         ${p.budget ? `<div style="color:var(--accent);font-size:13px;margin-top:4px">💰 Budget: €${p.budget}</div>` : ''}
         ${p.ruolo ? `<div style="color:var(--blue);font-size:12px;margin-top:2px">🏷️ ${p.ruolo}</div>` : ''}
         ${(tipo==='acquirente'||tipo==='proprietario') ? `<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
@@ -1237,6 +1245,11 @@ function renderIncroci() {
           <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:600">
             👥 ${acq ? acq.nome+' '+acq.cognome : '— Acquirente non trovato'}
           </div>
+          ${acq ? `<div style="display:flex;gap:14px;margin-top:5px;flex-wrap:wrap">
+            ${acq.telefono ? `<a href="tel:${acq.telefono}" style="color:var(--text);font-size:13px;text-decoration:none">📞 ${acq.telefono}</a>` : ''}
+            ${acq.email ? `<a href="https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(acq.email)}" target="_blank" style="color:var(--text);font-size:13px;text-decoration:none">✉️ ${acq.email}</a>` : ''}
+            ${acq.citta ? `<span style="color:var(--muted);font-size:13px">📍 ${acq.citta}</span>` : ''}
+          </div>` : ''}
           <div style="display:flex;gap:10px;margin-top:6px;flex-wrap:wrap">
             ${r.zonaDesiderata ? `<span style="color:var(--muted);font-size:12px">📍 ${r.zonaDesiderata}</span>` : ''}
             ${r.prezzoMax ? `<span style="color:var(--accent);font-size:12px">💰 max €${r.prezzoMax}</span>` : ''}
@@ -1267,7 +1280,9 @@ function renderIncroci() {
                 <span style="color:var(--muted);font-size:12px">🚪 ${imm.locali} locali</span>
                 ${imm.contratto ? badge(contrattoIcon(imm.contratto)+' '+imm.contratto, contrattoColor(imm.contratto)) : ''}
                 ${badge(imm.stato, statoColor(imm.stato))}
+                ${imm.tipoIncarico ? badge(incaricoLabel(imm.tipoIncarico), incaricoColor(imm.tipoIncarico)) : ''}
               </div>
+              ${imm.fineIncarico ? `<div style="font-size:11px;margin-top:4px;color:${isIncaricoScaduto(imm.fineIncarico)?'#f87171':'#fb923c'}">⏳ Fine incarico: ${imm.fineIncarico}${isIncaricoScaduto(imm.fineIncarico)?' · <strong>SCADUTO</strong>':''}</div>` : ''}
               <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px">
                 ${criteri.map(c=>`<span style="font-size:10px;background:rgba(74,222,128,0.1);color:#4ade80;border-radius:4px;padding:2px 6px">${c}</span>`).join('')}
               </div>
@@ -1397,7 +1412,10 @@ function renderCalendario() {
   days.forEach((d,i) => {
     const isToday = fmtDate(d) === todayStr;
     const dname = calView==='day' ? d.toLocaleDateString('it-IT',{weekday:'long'}) : dayNames[i];
-    html += `<div class="cal-header${isToday?' today':''}">${dname}<br><span style="font-size:${calView==='day'?'18':'14'}px;font-weight:700">${d.getDate()}</span></div>`;
+    const ds = fmtDate(d);
+    // In vista settimana: clic sul numero del giorno → vai alla vista giornaliera
+    const clickDay = calView==='week' ? `onclick="jumpToDay('${ds}')" style="cursor:pointer" title="Vai al giorno"` : '';
+    html += `<div class="cal-header${isToday?' today':''}" ${clickDay}>${dname}<br><span style="font-size:${calView==='day'?'18':'14'}px;font-weight:700;${calView==='week'?'text-decoration:underline dotted;':''}border-radius:50%;padding:2px 5px;${isToday?'background:var(--accent);color:var(--bg);text-decoration:none;border-radius:50%;padding:2px 6px;':''}">${d.getDate()}</span></div>`;
   });
 
   let timesHtml = `<div class="cal-times" style="height:${totalH}px">`;
@@ -1414,9 +1432,11 @@ function renderCalendario() {
 
     let rowsHtml = '';
     for(let h=0; h<HOURS; h++) {
-      rowsHtml += `<div class="cal-hour-row"></div>`;
+      const timeStr = String(h).padStart(2,'0') + ':00';
+      const timeStr30 = String(h).padStart(2,'0') + ':30';
+      rowsHtml += `<div class="cal-hour-row" onclick="newAttivitaFromCal('${ds}','${timeStr}')" style="cursor:pointer" title="Nuova attività alle ${timeStr}"></div>`;
       const halfTop = minToPx(h*60+30);
-      rowsHtml += `<div class="cal-half-line" style="top:${halfTop}px"></div>`;
+      rowsHtml += `<div class="cal-half-line" style="top:${halfTop}px;cursor:pointer" onclick="newAttivitaFromCal('${ds}','${timeStr30}')" title="Nuova attività alle ${timeStr30}"></div>`;
     }
 
     let eventsHtml = '';
@@ -1452,6 +1472,45 @@ function renderCalendario() {
   el.innerHTML = html;
 }
 
+function jumpToDay(dateStr) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const target = new Date(dateStr + 'T00:00:00');
+  calDayOffset = Math.round((target - today) / (1000*60*60*24));
+  setCalView('day');
+}
+
+function goToDate(dateStr) {
+  if(!dateStr) return;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const target = new Date(dateStr + 'T00:00:00');
+  if(calView === 'day') {
+    calDayOffset = Math.round((target - today) / (1000*60*60*24));
+    renderCalendario();
+  } else {
+    const dow = target.getDay() === 0 ? 6 : target.getDay() - 1;
+    const mondayTarget = new Date(target);
+    mondayTarget.setDate(target.getDate() - dow);
+    const todayDow = today.getDay() === 0 ? 6 : today.getDay() - 1;
+    const mondayToday = new Date(today);
+    mondayToday.setDate(today.getDate() - todayDow);
+    calWeekOffset = Math.round((mondayTarget - mondayToday) / (1000*60*60*24*7));
+    renderCalendario();
+  }
+}
+
+function newAttivitaFromCal(dateStr, timeStr) {
+  // Apre modal nuova attività precompilata con data e ora
+  openModal('attivita');
+  // Aspetta che il modal sia renderizzato poi setta data e ora
+  setTimeout(() => {
+    const fData = document.getElementById('f-data');
+    const fOra = document.getElementById('f-ora');
+    if(fData) fData.value = dateStr;
+    if(fOra) fOra.value = timeStr;
+    toggleAttFields();
+  }, 30);
+}
+
 function showAttivitaPopup(id, evt) {
   evt.stopPropagation();
   evt.preventDefault();
@@ -1476,6 +1535,8 @@ function showAttivitaPopup(id, evt) {
     <span style="color:var(--muted)">${a.personaTipo==='acquirente'?'👥':a.personaTipo==='proprietario'?'🏠':'👤'} </span>
     <strong>${p.nome} ${p.cognome}</strong>
     ${p.ruolo?`<span style="color:var(--muted);font-size:11px"> · ${p.ruolo}</span>`:''}
+    ${p.telefono?`<br><a href="tel:${p.telefono}" style="color:#4ade80;font-size:12px;text-decoration:none">📞 ${p.telefono}</a>`:''}
+    ${p.email?`<br><a href="https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(p.email)}" target="_blank" style="color:#60a5fa;font-size:12px;text-decoration:none">✉️ ${p.email}</a>`:''}
   </div>`;
 
   if(imm) html += `<div style="margin-bottom:8px;font-size:13px;color:var(--accent)">🏢 ${imm.titolo}${imm.contratto?' · '+imm.contratto:''}</div>`;
@@ -1611,7 +1672,9 @@ function renderImmobili() {
             <span style="color:var(--muted);font-size:13px">🚪 ${i.locali} locali</span>
             ${badge(i.stato, statoColor(i.stato))}
             ${i.contratto ? badge(contrattoIcon(i.contratto)+' '+i.contratto, contrattoColor(i.contratto)) : ''}
+            ${i.tipoIncarico ? badge(incaricoLabel(i.tipoIncarico), incaricoColor(i.tipoIncarico)) : ''}
           </div>
+          ${i.fineIncarico ? `<div style="margin-top:6px;font-size:12px;color:${isIncaricoScaduto(i.fineIncarico)?'#f87171':'#fb923c'}">⏳ Fine incarico: ${i.fineIncarico}${isIncaricoScaduto(i.fineIncarico)?' · <strong>SCADUTO</strong>':''}</div>` : ''}
           <div style="margin-top:10px;display:flex;gap:16px;flex-wrap:wrap;align-items:center">
             ${prop ? `<span style="color:var(--muted);font-size:12px">👤 Proprietario: <span style="color:#60a5fa">${prop.nome} ${prop.cognome}</span></span>` : ''}
             ${acq ? `<span style="color:var(--muted);font-size:12px">🤝 Acquirente: <span style="color:#4ade80">${acq.nome} ${acq.cognome}</span></span>` : ''}
@@ -1897,6 +1960,18 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
           ${['vendita','locazione','affitto'].map(c=>`<option value="${c}" ${data.contratto===c?'selected':''}>${c.charAt(0).toUpperCase()+c.slice(1)}</option>`).join('')}
         </select>
       </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Tipo Incarico</label>
+          <select class="form-control" id="f-tipo-incarico">
+            <option value="">-- nessuno --</option>
+            <option value="incarico" ${data.tipoIncarico==='incarico'?'selected':''}>📋 Incarico</option>
+            <option value="notizia-concorrenza" ${data.tipoIncarico==='notizia-concorrenza'?'selected':''}>🔔 Notizia concorrenza</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Fine Incarico</label>
+          <input type="date" class="form-control" id="f-fine-incarico" value="${data.fineIncarico||''}">
+        </div>
+      </div>
       <div class="form-group"><label class="form-label">Indirizzo</label><input class="form-control" id="f-indirizzo" value="${data.indirizzo||''}"></div>
       <div class="form-group"><label class="form-label">Città</label><input class="form-control" id="f-citta" value="${data.citta||''}"></div>
       <div class="form-row">
@@ -2022,6 +2097,8 @@ function saveImmobile() {
   const obj = {
     titolo: g('f-titolo'), tipo: g('f-tipo'), stato: g('f-stato'),
     contratto: g('f-contratto'),
+    tipoIncarico: g('f-tipo-incarico'),
+    fineIncarico: g('f-fine-incarico'),
     indirizzo: g('f-indirizzo'), citta: g('f-citta'), prezzo: g('f-prezzo'),
     mq: parseInt(g('f-mq'))||0, locali: parseInt(g('f-locali'))||0,
     proprietarioId: parseInt(g('f-proprietario'))||null,
@@ -2234,6 +2311,8 @@ function pdfImmobile(id) {
   y = pdfRow(doc, 'Indirizzo', `${i.indirizzo}, ${i.citta}`, y, false);
   y = pdfRow(doc, 'Tipo', i.tipo, y, true);
   y = pdfRow(doc, 'Contratto', i.contratto, y, false);
+  if(i.tipoIncarico) y = pdfRow(doc, 'Tipo Incarico', i.tipoIncarico==='incarico'?'Incarico':'Notizia concorrenza', y, true);
+  if(i.fineIncarico) y = pdfRow(doc, 'Fine Incarico', i.fineIncarico + (isIncaricoScaduto(i.fineIncarico)?' (SCADUTO)':''), y, !i.tipoIncarico);
   y = pdfRow(doc, 'Prezzo', `€ ${i.prezzo}`, y, true);
   y = pdfRow(doc, 'Superficie', `${i.mq} mq`, y, false);
   y = pdfRow(doc, 'Locali', i.locali, y, true);
