@@ -32,10 +32,6 @@ window._dbDoc = DB_DOC;
 window._setDoc = setDoc;
 window._onSnapshot = onSnapshot;
 window._firebaseReady = true;
-
-window.addEventListener('load', () => {
-  if(window._startFirebaseSync) window._startFirebaseSync();
-});
 </script>
 <style>
   :root {
@@ -2538,6 +2534,8 @@ async function checkPin() {
     sessionStorage.setItem('crm_auth', '1');
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('main-app').style.display = 'block';
+    // Avvia sincronizzazione Firebase dopo il login
+    if(window._startFirebaseSync) window._startFirebaseSync();
   } else {
     if(errEl) errEl.textContent = 'PIN errato. Riprova.';
     if(input) { input.value = ''; input.focus(); }
@@ -2556,6 +2554,9 @@ function crmLogout() {
 if(sessionStorage.getItem('crm_auth') === '1') {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('main-app').style.display = 'block';
+  // Avvia sincronizzazione Firebase anche al ripristino sessione
+  if(window._startFirebaseSync) window._startFirebaseSync();
+  else window.addEventListener('load', () => { if(window._startFirebaseSync) window._startFirebaseSync(); });
 }
 </script>
 </body>
