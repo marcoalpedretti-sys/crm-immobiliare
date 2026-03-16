@@ -13,7 +13,7 @@
 // ─────────────────────────────────────────────
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
 import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
-import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, getRedirectResult, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
 
 const ALLOWED_EMAIL = 'marcoalpedretti@gmail.com';
 
@@ -46,7 +46,7 @@ document.addEventListener('crm-login', async () => {
   const errEl = document.getElementById('login-error');
   if(btn) { btn.disabled = true; btn.textContent = 'Accesso in corso...'; }
   try {
-    await signInWithRedirect(auth, provider);
+    await signInWithPopup(auth, provider);
   } catch(e) {
     if(errEl) errEl.textContent = 'Errore: ' + (e.message || e.code);
     if(btn) { btn.disabled = false; btn.textContent = 'Accedi con Google'; }
