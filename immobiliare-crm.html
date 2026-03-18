@@ -312,7 +312,8 @@ window._firebaseReady = true;
     <small>CRM Immobiliare</small>
   </div>
   <button class="nav-btn active" onclick="showPage('dashboard')">◈ &nbsp;Dashboard</button>
-  <button class="nav-btn" onclick="showPage('acquirenti')">👥 &nbsp;Acquirenti</button>
+  <button class="nav-btn" onclick="showPage('operatori')">👨‍💼 &nbsp;Operatori</button>
+  <button class="nav-btn" onclick="showPage('acquirenti')">👥 &nbsp;Clienti</button>
   <button class="nav-btn" onclick="showPage('proprietari')">🏠 &nbsp;Proprietari</button>
   <button class="nav-btn" onclick="showPage('altri')">👤 &nbsp;Altri</button>
   <button class="nav-btn" onclick="showPage('richieste')">🔍 &nbsp;Richieste</button>
@@ -403,10 +404,10 @@ window._firebaseReady = true;
   <!-- ACQUIRENTI -->
   <div id="page-acquirenti" class="page">
     <div class="section-header">
-      <div><h1 class="section-title">Acquirenti</h1><p class="section-sub" id="acq-count"></p></div>
+      <div><h1 class="section-title">Clienti</h1><p class="section-sub" id="acq-count"></p></div>
       <div style="display:flex;gap:8px;align-items:center">
         <button class="btn-dashboard" onclick="showPage('dashboard')">◈ Dashboard</button>
-        <button class="btn btn-primary" onclick="openModal('acquirente')">+ Nuovo Acquirente</button>
+        <button class="btn btn-primary" onclick="openModal('acquirente')">+ Nuovo Cliente</button>
       </div>
     </div>
     <div id="list-acquirenti"></div>
@@ -434,6 +435,18 @@ window._firebaseReady = true;
       </div>
     </div>
     <div id="list-immobili"></div>
+  </div>
+
+  <!-- OPERATORI -->
+  <div id="page-operatori" class="page">
+    <div class="section-header">
+      <div><h1 class="section-title">Operatori</h1><p class="section-sub" id="op-count"></p></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-dashboard" onclick="showPage('dashboard')">◈ Dashboard</button>
+        <button class="btn btn-primary" onclick="openModal('operatore')">+ Nuovo Operatore</button>
+      </div>
+    </div>
+    <div id="list-operatori"></div>
   </div>
 
   <!-- ALTRI -->
@@ -600,6 +613,7 @@ window._firebaseReady = true;
 //  DATA
 // ─────────────────────────────────────────────
 let db = {
+  operatori: [],
   acquirenti: [
     { id:1, nome:"Marco", cognome:"Rossi", email:"marco.rossi@email.it", telefono:"333-1234567", citta:"Milano", budget:"350.000", note:"Cerca trilocale zona centro" },
     { id:2, nome:"Laura", cognome:"Bianchi", email:"laura.bianchi@email.it", telefono:"347-9876543", citta:"Roma", budget:"280.000", note:"Preferisce piano alto con ascensore" },
@@ -868,6 +882,7 @@ function showPage(name) {
 
 function renderPage(name) {
   if(name === 'dashboard') renderDashboard();
+  else if(name === 'operatori') renderOperatori();
   else if(name === 'acquirenti') renderPersone('acquirenti');
   else if(name === 'proprietari') renderPersone('proprietari');
   else if(name === 'altri') renderAltri();
@@ -920,7 +935,7 @@ function renderDashboard() {
   if(!document.getElementById('stats-grid')) return;
   const incrociCount = computeIncroci().reduce((s,r) => s + r.matches.length, 0);
   const stats = [
-    { l:'Acquirenti',    v:db.acquirenti.length,                                      c:'#60a5fa', i:'👥', page:'acquirenti' },
+    { l:'Clienti',    v:db.acquirenti.length,                                      c:'#60a5fa', i:'👥', page:'acquirenti' },
     { l:'Proprietari',   v:db.proprietari.length,                                     c:'#4ade80', i:'🏠', page:'proprietari' },
     { l:'Immobili',      v:db.immobili.length,                                        c:'#c8a96e', i:'🏢', page:'immobili' },
     { l:'In Trattativa', v:db.immobili.filter(i=>i.stato==='trattativa').length,      c:'#fb923c', i:'🤝', page:'immobili' },
@@ -982,6 +997,71 @@ function renderDashboard() {
 }
 
 // ─────────────────────────────────────────────
+//  RENDER OPERATORI
+// ─────────────────────────────────────────────
+function renderOperatori() {
+  if(!db.operatori) db.operatori = [];
+  const countEl = document.getElementById('op-count');
+  const listEl = document.getElementById('list-operatori');
+  if(!countEl || !listEl) return;
+  countEl.textContent = db.operatori.length + ' operatori registrati';
+  if(!db.operatori.length) {
+    listEl.innerHTML = '<span style="color:var(--muted);font-size:14px">Nessun operatore. Aggiungi il primo!</span>';
+    return;
+  }
+  listEl.innerHTML = db.operatori.map(op => `
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-name">👨‍💼 ${op.nome} ${op.cognome}</div>
+          <div class="card-sub">${op.email ? `<a href="https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(op.email)}" target="_blank" style="color:var(--muted);text-decoration:none">✉️ ${op.email}</a>` : ''}</div>
+          <div class="card-sub">${op.telefono ? `<a href="tel:${op.telefono}" style="color:var(--muted);text-decoration:none">📞 ${op.telefono}</a>` : ''}</div>
+          ${op.ruolo ? `<div style="color:var(--accent);font-size:12px;margin-top:4px">🏷️ ${op.ruolo}</div>` : ''}
+        </div>
+        <div class="actions-wrap">
+          <button class="actions-toggle" onclick="toggleDropdown('dd-op-${op.id}')">⋯</button>
+          <div class="actions-dropdown" id="dd-op-${op.id}">
+            <button class="edit" onclick="closeDropdown('dd-op-${op.id}');openModal('operatore',${op.id})">✏️ Modifica</button>
+            <button class="del" onclick="closeDropdown('dd-op-${op.id}');deleteOperatore(${op.id})">🗑 Elimina</button>
+          </div>
+        </div>
+      </div>
+      ${op.note ? `<div class="card-note">"${op.note}"</div>` : ''}
+    </div>`).join('');
+}
+
+function deleteOperatore(id) {
+  db.operatori = db.operatori.filter(o => o.id !== id);
+  saveDb(); renderOperatori(); toast('Operatore eliminato');
+}
+
+function saveOperatore() {
+  if(!db.operatori) db.operatori = [];
+  const obj = {
+    nome: g('f-nome'), cognome: g('f-cognome'),
+    email: g('f-email'), telefono: g('f-telefono'),
+    ruolo: g('f-ruolo'), note: g('f-note'),
+  };
+  if(editingId) { db.operatori = db.operatori.map(o => o.id===editingId ? {...o,...obj} : o); }
+  else { obj.id = nextId(db.operatori); db.operatori.push(obj); }
+  saveDb();
+  document.getElementById('modal-overlay').classList.remove('open');
+  renderOperatori();
+  toast(editingId ? 'Modifiche salvate' : 'Operatore aggiunto!');
+}
+
+function getOperatoriNomi(ids) {
+  if(!ids || !ids.length || !db.operatori) return '';
+  return ids.map(id => { const o = db.operatori.find(x=>x.id===id); return o?o.nome+' '+o.cognome:''; }).filter(Boolean).join(', ');
+}
+
+function getOperatoreNome(id) {
+  if(!id || !db.operatori) return null;
+  const op = db.operatori.find(o => o.id === id);
+  return op ? `${op.nome} ${op.cognome}` : null;
+}
+
+// ─────────────────────────────────────────────
 //  RENDER PERSONE
 // ─────────────────────────────────────────────
 function renderPersone(tipo) {
@@ -990,7 +1070,7 @@ function renderPersone(tipo) {
   const countEl = document.getElementById(tipo==='acquirenti'?'acq-count':'prop-count');
   const listEl = document.getElementById('list-' + tipo);
   if(!countEl || !listEl) return;
-  countEl.textContent = arr.length + ' contatti registrati';
+  countEl.textContent = arr.length + (tipo==='acquirenti' ? ' clienti registrati' : ' contatti registrati');
   listEl.innerHTML = arr.map(p => personaCard(p, tipoSing)).join('');
 }
 
@@ -1016,6 +1096,10 @@ function personaCard(p, tipo) {
         <div class="card-sub">📍 ${p.citta||''} &nbsp;•&nbsp; ${p.telefono ? `<a href="tel:${p.telefono}" style="color:var(--muted);text-decoration:none" onclick="event.stopPropagation()">📞 ${p.telefono}</a>` : ''}</div>
         <div class="card-sub">${p.email ? `<a href="https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(p.email)}" target="_blank" style="color:var(--muted);text-decoration:none" onclick="event.stopPropagation()">✉️ ${p.email}</a>` : ''}</div>
         ${p.budget ? `<div style="color:var(--accent);font-size:13px;margin-top:4px">💰 Budget: €${p.budget}</div>` : ''}
+        ${p.ruoloCliente && tipo==='acquirente' ? `<div style="margin-top:4px">${badge(
+          p.ruoloCliente==='acquirente'?'🛒 Acquirente':'🔑 Locatario',
+          p.ruoloCliente==='acquirente'?'#60a5fa':p.ruoloCliente==='locatario'?'#4ade80':'#a78bfa'
+        )}</div>` : ''}
         ${p.ruolo ? `<div style="color:var(--blue);font-size:12px;margin-top:2px">🏷️ ${p.ruolo}</div>` : ''}
         ${(tipo==='acquirente'||tipo==='proprietario') ? `<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
           ${p.privacy
@@ -1026,6 +1110,7 @@ function personaCard(p, tipo) {
             : `<span style="background:rgba(248,113,113,0.1);color:#f87171;border:1px solid rgba(248,113,113,0.3);border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700">🛡️ Antiriciclaggio ✗</span>`}
         </div>` : ''}
         ${p.driveUrl ? `<a href="${p.driveUrl}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;margin-top:6px;color:#34a853;font-size:12px;text-decoration:none;background:rgba(52,168,83,0.1);border:1px solid rgba(52,168,83,0.3);border-radius:6px;padding:3px 8px;">📁 Cartella Drive</a>` : ''}
+        ${p.operatoriIds && p.operatoriIds.length ? `<div style="color:var(--muted);font-size:12px;margin-top:4px">👨‍💼 ${getOperatoriNomi(p.operatoriIds)}</div>` : ''}
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
         ${badge(mieAtt.length + ' attività', mieAtt.length>0?'#4ade80':'#6b6b8a')}
@@ -1265,12 +1350,13 @@ function renderIncroci() {
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
         <div>
           <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:600">
-            👥 ${acq ? acq.nome+' '+acq.cognome : '— Acquirente non trovato'}
+            👥 ${acq ? acq.nome+' '+acq.cognome : '— Cliente non trovato'}
           </div>
           ${acq ? `<div style="display:flex;gap:14px;margin-top:5px;flex-wrap:wrap">
             ${acq.telefono ? `<a href="tel:${acq.telefono}" style="color:var(--text);font-size:13px;text-decoration:none">📞 ${acq.telefono}</a>` : ''}
             ${acq.email ? `<a href="https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(acq.email)}" target="_blank" style="color:var(--text);font-size:13px;text-decoration:none">✉️ ${acq.email}</a>` : ''}
             ${acq.citta ? `<span style="color:var(--muted);font-size:13px">📍 ${acq.citta}</span>` : ''}
+            ${acq.operatoriIds && acq.operatoriIds.length ? `<span style="color:var(--muted);font-size:12px">👨‍💼 ${getOperatoriNomi(acq.operatoriIds)}</span>` : ''}
           </div>` : ''}
           <div style="display:flex;gap:10px;margin-top:6px;flex-wrap:wrap">
             ${r.zonaDesiderata ? `<span style="color:var(--muted);font-size:12px">📍 ${r.zonaDesiderata}</span>` : ''}
@@ -1305,6 +1391,7 @@ function renderIncroci() {
                 ${imm.tipoIncarico ? badge(incaricoLabel(imm.tipoIncarico), incaricoColor(imm.tipoIncarico)) : ''}
               </div>
               ${imm.fineIncarico ? `<div style="font-size:11px;margin-top:4px;color:${isIncaricoScaduto(imm.fineIncarico)?'#f87171':'#fb923c'}">⏳ Fine incarico: ${imm.fineIncarico}${isIncaricoScaduto(imm.fineIncarico)?' · <strong>SCADUTO</strong>':''}</div>` : ''}
+              ${imm.operatoriIds && imm.operatoriIds.length ? `<div style="font-size:11px;margin-top:4px;color:var(--muted)">👨‍💼 ${getOperatoriNomi(imm.operatoriIds)}</div>` : ''}
               <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px">
                 ${criteri.map(c=>`<span style="font-size:10px;background:rgba(74,222,128,0.1);color:#4ade80;border-radius:4px;padding:2px 6px">${c}</span>`).join('')}
               </div>
@@ -1663,7 +1750,7 @@ function editAttivita(id) {
     <div class="form-row">
       <div class="form-group"><label class="form-label">Tipo Persona</label>
         <select class="form-control" id="f-persona-tipo" onchange="switchPersoneOpts()">
-          <option value="acquirente" ${a.personaTipo==='acquirente'?'selected':''}>Acquirente</option>
+          <option value="acquirente" ${a.personaTipo==='acquirente'?'selected':''}>Cliente</option>
           <option value="proprietario" ${a.personaTipo==='proprietario'?'selected':''}>Proprietario</option>
           <option value="altro" ${a.personaTipo==='altro'?'selected':''}>Altro Contatto</option>
         </select>
@@ -1695,6 +1782,7 @@ function editAttivita(id) {
     <div class="form-group"><label class="form-label">Note</label>
       <textarea class="form-control" id="f-note" rows="3">${a.note||''}</textarea>
     </div>
+    ${db.operatori && db.operatori.length ? `<div class="form-group"><label class="form-label">👨‍💼 Operatori</label><div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;display:flex;flex-wrap:wrap;gap:8px">${(db.operatori||[]).map(o=>`<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--text);white-space:nowrap"><input type="checkbox" value="${o.id}" ${(a.operatoriIds||[]).includes(o.id)?'checked':''} style="accent-color:var(--accent);cursor:pointer"> ${o.nome} ${o.cognome}</label>`).join('')}</div></div>` : ''}
     <div id="gcal-note" style="display:none;background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.3);border-radius:8px;padding:10px;margin-bottom:14px;font-size:12px;color:#60a5fa">
       📅 Potrai aggiornarlo su Google Calendar dopo il salvataggio
     </div>
@@ -1732,8 +1820,9 @@ function renderImmobili() {
           ${i.fineIncarico ? `<div style="margin-top:6px;font-size:12px;color:${isIncaricoScaduto(i.fineIncarico)?'#f87171':'#fb923c'}">⏳ Fine incarico: ${i.fineIncarico}${isIncaricoScaduto(i.fineIncarico)?' · <strong>SCADUTO</strong>':''}</div>` : ''}
           <div style="margin-top:10px;display:flex;gap:16px;flex-wrap:wrap;align-items:center">
             ${prop ? `<span style="color:var(--muted);font-size:12px">👤 Proprietario: <span style="color:#60a5fa">${prop.nome} ${prop.cognome}</span></span>` : ''}
-            ${acq ? `<span style="color:var(--muted);font-size:12px">🤝 Acquirente: <span style="color:#4ade80">${acq.nome} ${acq.cognome}</span></span>` : ''}
+            ${acq ? `<span style="color:var(--muted);font-size:12px">🤝 Cliente: <span style="color:#4ade80">${acq.nome} ${acq.cognome}</span></span>` : ''}
             ${i.driveUrl ? `<a href="${i.driveUrl}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;color:#34a853;font-size:12px;text-decoration:none;background:rgba(52,168,83,0.1);border:1px solid rgba(52,168,83,0.3);border-radius:6px;padding:3px 8px;">📁 Cartella Drive</a>` : ''}
+            ${i.operatoriIds && i.operatoriIds.length ? `<span style="color:var(--muted);font-size:12px">👨‍💼 ${getOperatoriNomi(i.operatoriIds)}</span>` : ''}
           </div>
         </div>
         <div class="actions-wrap">
@@ -1879,6 +1968,7 @@ function renderAttivita() {
               ${a.luogo ? `<div style="color:#4ade80;font-size:12px">📍 ${a.luogo}</div>` : ''}
               ${a.oraFine ? `<div style="color:var(--muted);font-size:12px">🕐 Fino alle ${a.oraFine}</div>` : ''}
               ${a.durata ? `<div style="color:var(--muted);font-size:12px">⏱ ${a.durata}</div>` : ''}
+              ${a.operatoriIds && a.operatoriIds.length ? `<div style="color:var(--muted);font-size:12px">👨‍💼 ${getOperatoriNomi(a.operatoriIds)}</div>` : ''}
             </div>
           </div>
           <div style="display:flex;gap:8px;align-items:center">
@@ -1918,7 +2008,7 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
   currentModal = tipo; editingId = id;
   document.getElementById('modal-overlay').classList.add('open');
 
-  const labels = { acquirente:'Acquirente', proprietario:'Proprietario', altro:'Altro Contatto', immobile:'Immobile', attivita:'Attività', richiesta:'Richiesta Acquirente' };
+  const labels = { acquirente:'Cliente', proprietario:'Proprietario', altro:'Altro Contatto', operatore:'Operatore', immobile:'Immobile', attivita:'Attività', richiesta:'Richiesta Cliente' };
   document.getElementById('modal-title').textContent = (id ? 'Modifica ' : 'Nuovo ') + labels[tipo];
 
   let data = {};
@@ -1926,15 +2016,33 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
     if(tipo==='acquirente') data = db.acquirenti.find(p=>p.id===id)||{};
     else if(tipo==='proprietario') data = db.proprietari.find(p=>p.id===id)||{};
     else if(tipo==='altro') data = db.altri.find(p=>p.id===id)||{};
+    else if(tipo==='operatore') data = (db.operatori||[]).find(o=>o.id===id)||{};
     else if(tipo==='immobile') data = db.immobili.find(i=>i.id===id)||{};
     else if(tipo==='richiesta') data = (db.richieste||[]).find(r=>r.id===id)||{};
   }
 
+  // Helper: select operatori
+  const opOpts = '<option value="">-- nessuno --</option>' + (db.operatori||[]).map(o=>`<option value="${o.id}" ${data.operatoreId===o.id?'selected':''}>${o.nome} ${o.cognome}</option>`).join('');
+
   let html = '';
-  if(tipo==='richiesta') {
+  if(tipo==='operatore') {
+    html = `
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Nome</label><input class="form-control" id="f-nome" value="${data.nome||''}"></div>
+        <div class="form-group"><label class="form-label">Cognome</label><input class="form-control" id="f-cognome" value="${data.cognome||''}"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Email</label><input class="form-control" id="f-email" type="email" value="${data.email||''}"></div>
+        <div class="form-group"><label class="form-label">Telefono</label><input class="form-control" id="f-telefono" value="${data.telefono||''}"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Ruolo / Titolo</label><input class="form-control" id="f-ruolo" placeholder="es. Agente, Responsabile..." value="${data.ruolo||''}"></div>
+      <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note" rows="2">${data.note||''}</textarea></div>
+      <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="saveOperatore()">💾 ${id?'Salva Modifiche':'Aggiungi Operatore'}</button>`;
+  }
+  else if(tipo==='richiesta') {
     const acqOpts = db.acquirenti.map(a=>`<option value="${a.id}" ${data.acquirenteId===a.id?'selected':''}>${a.nome} ${a.cognome}</option>`).join('');
     html = `
-      <div class="form-group"><label class="form-label">Acquirente</label>
+      <div class="form-group"><label class="form-label">Cliente</label>
         <select class="form-control" id="f-acq-rich"><option value="">-- seleziona --</option>${acqOpts}</select>
       </div>
       <div class="form-row">
@@ -1974,7 +2082,16 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
         <div class="form-group"><label class="form-label">Telefono</label><input class="form-control" id="f-telefono" value="${data.telefono||''}"></div>
       </div>
       <div class="form-group"><label class="form-label">Città</label><input class="form-control" id="f-citta" value="${data.citta||''}"></div>
-      ${tipo==='acquirente' ? `<div class="form-group"><label class="form-label">Budget (€)</label><input class="form-control" id="f-budget" value="${data.budget||''}"></div>` : ''}
+      ${tipo==='acquirente' ? `
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Ruolo Cliente</label>
+          <select class="form-control" id="f-ruolo-cliente">
+            <option value="acquirente" ${(data.ruoloCliente||'acquirente')==='acquirente'?'selected':''}>🛒 Acquirente</option>
+            <option value="locatario" ${data.ruoloCliente==='locatario'?'selected':''}>🔑 Locatario</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Budget (€)</label><input class="form-control" id="f-budget" value="${data.budget||''}"></div>
+      </div>` : ''}
       ${tipo==='altro' ? `<div class="form-group"><label class="form-label">Ruolo / Categoria</label><input class="form-control" id="f-ruolo" placeholder="es. Notaio, Banca, Geometra..." value="${data.ruolo||''}"></div>` : ''}
       ${(tipo==='acquirente' || tipo==='proprietario') ? `
       <div style="background:rgba(200,169,110,0.07);border:1px solid rgba(200,169,110,0.2);border-radius:10px;padding:14px;margin-bottom:14px">
@@ -1991,11 +2108,15 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
         </div>
       </div>` : ''}
       <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note" rows="3">${data.note||''}</textarea></div>
+      ${db.operatori && db.operatori.length ? `<div class="form-group"><label class="form-label">👨‍💼 Operatori</label><div id="f-operatori-wrap" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;display:flex;flex-wrap:wrap;gap:8px">${(db.operatori||[]).map(o=>`<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--text);white-space:nowrap"><input type="checkbox" value="${o.id}" ${(data.operatoriIds||[]).includes(o.id)?'checked':''} style="accent-color:var(--accent);cursor:pointer"> ${o.nome} ${o.cognome}</label>`).join('')}</div></div>` : ''}
       <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="savePersona()">💾 ${id?'Salva Modifiche':'Aggiungi'}</button>`;
   }
   else if(tipo==='immobile') {
     const propOpts = db.proprietari.map(p => `<option value="${p.id}" ${data.proprietarioId===p.id?'selected':''}>${p.nome} ${p.cognome}</option>`).join('');
     const acqOpts = '<option value="">-- nessuno --</option>' + db.acquirenti.map(a => `<option value="${a.id}" ${data.acquirenteId===a.id?'selected':''}>${a.nome} ${a.cognome}</option>`).join('');
+    // Per immobili: default operatori dal proprietario se non già impostati
+    const immOpIds = data.operatoriIds && data.operatoriIds.length ? data.operatoriIds :
+      (data.proprietarioId ? (db.proprietari.find(p=>p.id===data.proprietarioId)||{}).operatoriIds||[] : []);
     html = `
       <div class="form-group"><label class="form-label">Titolo</label><input class="form-control" id="f-titolo" value="${data.titolo||''}"></div>
       <div class="form-row">
@@ -2036,7 +2157,8 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
       </div>
       <div class="form-group"><label class="form-label">Locali</label><input class="form-control" id="f-locali" type="number" value="${data.locali||''}"></div>
       <div class="form-group"><label class="form-label">Proprietario</label><select class="form-control" id="f-proprietario">${propOpts}</select></div>
-      <div class="form-group"><label class="form-label">Acquirente (opzionale)</label><select class="form-control" id="f-acquirente">${acqOpts}</select></div>
+      <div class="form-group"><label class="form-label">Cliente (opzionale)</label><select class="form-control" id="f-acquirente">${acqOpts}</select></div>
+      ${db.operatori && db.operatori.length ? `<div class="form-group"><label class="form-label">👨‍💼 Operatori</label><div id="f-operatori-wrap" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;display:flex;flex-wrap:wrap;gap:8px">${(db.operatori||[]).map(o=>`<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--text);white-space:nowrap"><input type="checkbox" value="${o.id}" ${(immOpIds).includes(o.id)?'checked':''} style="accent-color:var(--accent);cursor:pointer"> ${o.nome} ${o.cognome}</label>`).join('')}</div></div>` : ''}
       <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="saveImmobile()">💾 ${id?'Salva Modifiche':'Aggiungi'}</button>`;
   }
   else if(tipo==='attivita') {
@@ -2059,7 +2181,7 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
       <div class="form-row">
         <div class="form-group"><label class="form-label">Tipo Persona</label>
           <select class="form-control" id="f-persona-tipo" onchange="switchPersoneOpts()">
-            <option value="acquirente" ${prePersonaTipo==='acquirente'?'selected':''}>Acquirente</option>
+            <option value="acquirente" ${prePersonaTipo==='acquirente'?'selected':''}>Cliente</option>
             <option value="proprietario" ${prePersonaTipo==='proprietario'?'selected':''}>Proprietario</option>
             <option value="altro" ${prePersonaTipo==='altro'?'selected':''}>Altro Contatto</option>
           </select>
@@ -2081,6 +2203,7 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
         </select>
       </div>
       <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note" rows="3"></textarea></div>
+      ${db.operatori && db.operatori.length ? `<div class="form-group"><label class="form-label">👨‍💼 Operatori</label><div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;display:flex;flex-wrap:wrap;gap:8px">${(db.operatori||[]).map(o=>`<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--text);white-space:nowrap"><input type="checkbox" value="${o.id}" style="accent-color:var(--accent);cursor:pointer"> ${o.nome} ${o.cognome}</label>`).join('')}</div></div>` : ''}
       <div id="gcal-note" style="display:none;background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.3);border-radius:8px;padding:10px;margin-bottom:14px;font-size:12px;color:#60a5fa">
         📅 L'appuntamento verrà salvato e potrai aggiungerlo a Google Calendar dopo
       </div>
@@ -2126,6 +2249,13 @@ function closeModal(e) {
 
 function g(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
 
+function getCheckedOperatori() {
+  const boxes = document.querySelectorAll('#f-operatori-wrap input[type="checkbox"]:checked, .form-group input[type="checkbox"][value]:checked');
+  const ids = [];
+  boxes.forEach(b => { const v = parseInt(b.value); if(v && !ids.includes(v)) ids.push(v); });
+  return ids;
+}
+
 function savePersona() {
   const tipo = currentModal;
   const arr = tipo==='acquirente' ? 'acquirenti' : tipo==='proprietario' ? 'proprietari' : 'altri';
@@ -2133,7 +2263,10 @@ function savePersona() {
     nome: g('f-nome'), cognome: g('f-cognome'), email: g('f-email'),
     telefono: g('f-telefono'), citta: g('f-citta'), note: g('f-note'),
   };
-  if(tipo==='acquirente') obj.budget = g('f-budget');
+  if(tipo==='acquirente') {
+    obj.budget = g('f-budget');
+    obj.ruoloCliente = g('f-ruolo-cliente') || 'acquirente';
+  }
   if(tipo==='altro') obj.ruolo = g('f-ruolo');
   if(tipo==='acquirente' || tipo==='proprietario') {
     const privEl = document.getElementById('f-privacy');
@@ -2141,6 +2274,7 @@ function savePersona() {
     obj.privacy = privEl ? privEl.checked : false;
     obj.antiriciclaggio = antiEl ? antiEl.checked : false;
   }
+  obj.operatoriIds = getCheckedOperatori();
   if(editingId) { db[arr] = db[arr].map(p => p.id===editingId ? {...p,...obj} : p); }
   else { obj.id = nextId(db[arr]); db[arr].push(obj); }
   saveDb();
@@ -2159,6 +2293,7 @@ function saveImmobile() {
     mq: parseInt(g('f-mq'))||0, locali: parseInt(g('f-locali'))||0,
     proprietarioId: parseInt(g('f-proprietario'))||null,
     acquirenteId: parseInt(g('f-acquirente'))||null,
+    operatoriIds: getCheckedOperatori(),
   };
   if(editingId) { db.immobili = db.immobili.map(i => i.id===editingId ? {...i,...obj} : i); }
   else { obj.id = nextId(db.immobili); db.immobili.push(obj); }
@@ -2202,6 +2337,7 @@ function saveAttivita() {
     durata: g('f-durata'),
     oggetto: g('f-oggetto'),
     luogo: g('f-luogo'),
+    operatoriIds: getCheckedOperatori(),
   };
   if(editingId) {
     db.attivita = db.attivita.map(a => a.id===editingId ? {...a,...obj} : a);
@@ -2305,8 +2441,9 @@ function pdfPersona(tipo, id) {
   y = pdfRow(doc, 'Email', p.email, y, true);
   y = pdfRow(doc, 'Telefono', p.telefono, y, false);
   y = pdfRow(doc, 'Città', p.citta, y, true);
-  if(p.budget) y = pdfRow(doc, 'Budget', `€ ${p.budget}`, y, false);
-  if(p.ruolo) y = pdfRow(doc, 'Ruolo', p.ruolo, y, true);
+  if(p.ruoloCliente) y = pdfRow(doc, 'Ruolo Cliente', p.ruoloCliente==='acquirente'?'Acquirente':'Locatario', y, false);
+  if(p.budget) y = pdfRow(doc, 'Budget', `€ ${p.budget}`, y, true);
+  if(p.ruolo) y = pdfRow(doc, 'Ruolo', p.ruolo, y, false);
   if(tipo==='acquirente'||tipo==='proprietario') {
     y = pdfRow(doc, 'Privacy', p.privacy ? '✓ Firmata' : '✗ Non firmata', y, false);
     y = pdfRow(doc, 'Antiriciclaggio', p.antiriciclaggio ? '✓ Firmato' : '✗ Non firmato', y, true);
