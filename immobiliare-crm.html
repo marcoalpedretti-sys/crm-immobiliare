@@ -338,6 +338,7 @@ window._firebaseReady = true;
   <button class="nav-btn" onclick="showPage('attivita')">📋 &nbsp;Attività</button>
   <button class="nav-btn" onclick="showPage('calendario')">📅 &nbsp;Calendario</button>
   <div style="margin-top:auto; padding: 0 24px 16px; display:flex; flex-direction:column; gap:8px;">
+    <button class="nav-btn" style="padding:10px 0; font-size:12px;" onclick="showPage('database')">🗄️ &nbsp;Database</button>
     <button class="nav-btn" style="padding:10px 0; font-size:12px;" onclick="showPage('impostazioni')">⚙️ &nbsp;Impostazioni</button>
   </div>
 </aside>
@@ -574,6 +575,20 @@ window._firebaseReady = true;
       </div>
     </div>
     <div id="cal-grid" style="overflow-x:auto"></div>
+  </div>
+
+  <!-- DATABASE -->
+  <div id="page-database" class="page">
+    <div class="section-header">
+      <div><h1 class="section-title">Database</h1><p class="section-sub">Visualizza, aggiungi e cancella record</p></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-dashboard" onclick="showPage('dashboard')">◈ Dashboard</button>
+      </div>
+    </div>
+    <!-- Tab selettore tabella -->
+    <div id="db-tabs" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px"></div>
+    <!-- Contenuto tabella -->
+    <div id="db-content"></div>
   </div>
 
   <!-- IMPOSTAZIONI -->
@@ -981,6 +996,7 @@ function renderPage(name) {
   else if(name === 'inattivi') renderInattivi();
   else if(name === 'attivita') { attivitaFilter = 'tutti'; renderAttivita(); }
   else if(name === 'calendario') renderCalendario();
+  else if(name === 'database') renderDatabase();
   else if(name === 'impostazioni') {
     const inp = document.getElementById('client-id-input');
     if(inp && CLIENT_ID) inp.value = CLIENT_ID;
@@ -3239,6 +3255,138 @@ if(CLIENT_ID) {
 if(GCAL_EMAIL) {
   const emailInp = document.getElementById('gcal-email-input');
   if(emailInp) emailInp.value = GCAL_EMAIL;
+}
+
+// ─────────────────────────────────────────────
+//  DATABASE VIEWER
+// ─────────────────────────────────────────────
+let dbActiveTable = 'acquirenti';
+
+const DB_TABLES = [
+  { key: 'acquirenti',      label: '👥 Clienti',         icon: '👥' },
+  { key: 'proprietari',     label: '🏠 Proprietari',     icon: '🏠' },
+  { key: 'altri',           label: '👤 Altri',            icon: '👤' },
+  { key: 'operatori',       label: '👨‍💼 Operatori',       icon: '👨‍💼' },
+  { key: 'immobili',        label: '🏢 Immobili',         icon: '🏢' },
+  { key: 'richieste',       label: '🔍 Richieste',        icon: '🔍' },
+  { key: 'attivita',        label: '📋 Attività',         icon: '📋' },
+  { key: 'trattative',      label: '🤝 Trattative',      icon: '🤝' },
+  { key: 'vendutiClienti',  label: '✅ Venduti',          icon: '✅' },
+];
+
+function renderDatabase(table) {
+  if(table) dbActiveTable = table;
+  const tabsEl = document.getElementById('db-tabs');
+  const contentEl = document.getElementById('db-content');
+  if(!tabsEl || !contentEl) return;
+
+  // Tabs
+  tabsEl.innerHTML = DB_TABLES.map(t => `
+    <button onclick="renderDatabase('${t.key}')" style="
+      padding:8px 16px;border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif;
+      font-size:13px;font-weight:600;border:1px solid ${dbActiveTable===t.key?'var(--accent)':'var(--border)'};
+      background:${dbActiveTable===t.key?'rgba(200,169,110,0.15)':'none'};
+      color:${dbActiveTable===t.key?'var(--accent)':'var(--muted)'};
+      transition:all 0.2s">
+      ${t.label} <span style="color:var(--muted);font-weight:400;font-size:11px">(${(db[t.key]||[]).length})</span>
+    </button>`).join('');
+
+  const arr = db[dbActiveTable] || [];
+  const tableDef = DB_TABLES.find(t => t.key === dbActiveTable);
+
+  if(!arr.length) {
+    contentEl.innerHTML = `<div style="color:var(--muted);padding:24px;text-align:center">Nessun record in ${tableDef.label}</div>`;
+    return;
+  }
+
+  // Costruisci colonne dai campi del primo record (escludi operatoriIds per brevità)
+  const skipFields = ['operatoriIds'];
+  const fields = Object.keys(arr[0]).filter(f => !skipFields.includes(f));
+
+  // Label friendly per i campi
+  const fieldLabels = {
+    id:'ID', nome:'Nome', cognome:'Cognome', email:'Email', telefono:'Tel',
+    citta:'Città', budget:'Budget', note:'Note', ruolo:'Ruolo', ruoloCliente:'Tipo',
+    privacy:'Privacy', antiriciclaggio:'Antir.', driveUrl:'Drive',
+    titolo:'Titolo', tipo:'Tipo', indirizzo:'Indirizzo', prezzo:'Prezzo €',
+    mq:'Mq', locali:'Loc.', stato:'Stato', contratto:'Contratto',
+    tipoIncarico:'Incarico', fineIncarico:'Data', proprietarioId:'Prop.ID',
+    acquirenteId:'Acq.ID', data:'Data', ora:'Ora', oraFine:'Fine',
+    personaTipo:'Chi', personaId:'Chi ID', immobileId:'Imm.ID',
+    clienteId:'Cli.ID', stato_:'Stato', operatoreId:'Op.ID',
+    zonaDesiderata:'Zona', prezzoMin:'€Min', prezzoMax:'€Max',
+    localiMin:'LocMin', mqMin:'MqMin', durata:'Durata',
+    luogo:'Luogo', oggetto:'Oggetto', dataAggiornamentoStato:'Dal',
+    tipoIncarico:'Incarico', fineIncarico:'Data inc.'
+  };
+
+  // Helper per risolvere ID in nomi
+  function resolveId(field, val) {
+    if(!val) return '—';
+    if(field === 'proprietarioId') { const p = db.proprietari.find(x=>x.id===val); return p ? p.nome+' '+p.cognome : val; }
+    if(field === 'acquirenteId' || field === 'clienteId') { const a = db.acquirenti.find(x=>x.id===val); return a ? a.nome+' '+a.cognome : val; }
+    if(field === 'personaId') {
+      const arr2 = [...db.acquirenti,...db.proprietari,...db.altri];
+      const p = arr2.find(x=>x.id===val); return p ? p.nome+' '+p.cognome : val;
+    }
+    if(field === 'immobileId') { const i = db.immobili.find(x=>x.id===val); return i ? i.titolo : val; }
+    if(typeof val === 'boolean') return val ? '✓' : '✗';
+    if(typeof val === 'string' && val.length > 40) return val.slice(0,38)+'…';
+    return val ?? '—';
+  }
+
+  contentEl.innerHTML = `
+    <div style="overflow-x:auto;border-radius:12px;border:1px solid var(--border)">
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead>
+          <tr style="background:var(--card)">
+            ${fields.map(f => `<th style="padding:10px 12px;text-align:left;color:var(--accent);font-size:11px;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;border-bottom:1px solid var(--border)">${fieldLabels[f]||f}</th>`).join('')}
+            <th style="padding:10px 12px;border-bottom:1px solid var(--border)"></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${arr.map((row, idx) => `
+            <tr style="border-bottom:1px solid var(--border);background:${idx%2===0?'var(--bg)':'var(--card)'}">
+              ${fields.map(f => `<td style="padding:9px 12px;color:${f==='id'?'var(--muted)':'var(--text)'};max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${resolveId(f, row[f])}</td>`).join('')}
+              <td style="padding:6px 8px;white-space:nowrap">
+                <button onclick="dbDeleteRecord('${dbActiveTable}',${row.id})" style="background:none;border:1px solid rgba(248,113,113,0.4);color:#f87171;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:11px;font-family:'DM Sans',sans-serif">🗑</button>
+              </td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding:0 4px">
+      <span style="color:var(--muted);font-size:12px">${arr.length} record totali</span>
+      <button onclick="dbExportCsv('${dbActiveTable}')" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:6px 14px;cursor:pointer;font-size:12px;font-family:'DM Sans',sans-serif">📥 Esporta CSV</button>
+    </div>`;
+}
+
+function dbDeleteRecord(tableKey, id) {
+  if(!confirm('Eliminare questo record?')) return;
+  db[tableKey] = (db[tableKey]||[]).filter(r => r.id !== id);
+  saveDb();
+  renderDatabase();
+  toast('Record eliminato');
+}
+
+function dbExportCsv(tableKey) {
+  const arr = db[tableKey] || [];
+  if(!arr.length) { toast('Nessun dato da esportare', 'orange'); return; }
+  const skipFields = ['operatoriIds'];
+  const fields = Object.keys(arr[0]).filter(f => !skipFields.includes(f));
+  const rows = [fields.join(';')];
+  arr.forEach(r => rows.push(fields.map(f => {
+    const v = r[f];
+    if(v === null || v === undefined) return '';
+    if(typeof v === 'string' && (v.includes(';') || v.includes('"') || v.includes('\n'))) return '"'+v.replace(/"/g,'""')+'"';
+    return v;
+  }).join(';')));
+  const blob = new Blob([rows.join('\n')], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `immobilia_${tableKey}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+  toast('📥 CSV esportato!');
 }
 
 // ─────────────────────────────────────────────
