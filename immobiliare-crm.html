@@ -1429,7 +1429,7 @@ function computeIncroci(filtri = {}) {
       }
 
       const pct = maxScore > 0 ? Math.min(100, Math.round((score / maxScore) * 100)) : 0;
-      if(pct > 0) matches.push({ imm, score: pct, criteri });
+      if(pct > 50) matches.push({ imm, score: pct, criteri });
     });
 
     matches.sort((a,b) => b.score - a.score);
@@ -1925,8 +1925,10 @@ function renderTrattativeVenduti(tipo) {
   const accentCol = isVenduto ? '#34d399' : '#fb923c';
 
   if(isVenduto) {
-    // Venduti: immobili con tipoIncarico=venduto + vendutiClienti
+    // Venduti: solo immobili con tipoIncarico=venduto che esistono ancora nel db
     const immVenduti = db.immobili.filter(i => i.tipoIncarico === 'venduto');
+    // Pulisci vendutiClienti orfani
+    db.vendutiClienti = (db.vendutiClienti||[]).filter(v => db.immobili.find(i => i.id === v.immobileId));
     if(countEl) countEl.textContent = `${immVenduti.length} immobili venduti`;
     if(!immVenduti.length) {
       listEl.innerHTML = `<div style="color:var(--muted);font-size:14px;padding:20px">Nessun immobile venduto.</div>`;
@@ -1940,7 +1942,9 @@ function renderTrattativeVenduti(tipo) {
     }).join('');
 
   } else {
-    // Tutte le trattative (anche venduto), raggruppate per immobile
+    // Tutte le trattative, filtrando gli immobili che esistono ancora
+    const validImmIds = db.immobili.map(i => i.id);
+    db.trattative = (db.trattative||[]).filter(t => validImmIds.includes(t.immobileId));
     const immIds = [...new Set(db.trattative.map(t => t.immobileId))];
     const trattAperte = db.trattative.filter(t => t.stato === 'aperta').length;
     if(countEl) countEl.textContent = `${trattAperte} trattative aperte su ${immIds.length} immobili`;
