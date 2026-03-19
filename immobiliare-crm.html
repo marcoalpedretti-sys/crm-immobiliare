@@ -334,6 +334,7 @@ window._firebaseReady = true;
   <button class="nav-btn" onclick="showPage('immobili')">🏢 &nbsp;Immobili</button>
   <button class="nav-btn" onclick="showPage('trattative')">🤝 &nbsp;Trattative</button>
   <button class="nav-btn" onclick="showPage('venduti')">✅ &nbsp;Venduti</button>
+  <button class="nav-btn" onclick="showPage('locati')">🔑 &nbsp;Locati</button>
   <button class="nav-btn" onclick="showPage('inattivi')">📦 &nbsp;Inattivi</button>
   <button class="nav-btn" onclick="showPage('attivita')">📋 &nbsp;Attività</button>
   <button class="nav-btn" onclick="showPage('calendario')">📅 &nbsp;Calendario</button>
@@ -478,7 +479,17 @@ window._firebaseReady = true;
     <div id="list-venduti"></div>
   </div>
 
-  <!-- INATTIVI -->
+  <!-- LOCATI -->
+  <div id="page-locati" class="page">
+    <div class="section-header">
+      <div><h1 class="section-title">Locati</h1><p class="section-sub" id="locati-count"></p></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-dashboard" onclick="showPage('dashboard')">◈ Dashboard</button>
+        <button class="btn-dashboard" onclick="showPage('immobili')">🏢 Immobili</button>
+      </div>
+    </div>
+    <div id="list-locati"></div>
+  </div>
   <div id="page-inattivi" class="page">
     <div class="section-header">
       <div>
@@ -993,6 +1004,7 @@ function renderPage(name) {
   else if(name === 'immobili') renderImmobili();
   else if(name === 'trattative') renderTrattativeVenduti('trattativa');
   else if(name === 'venduti') renderTrattativeVenduti('venduto');
+  else if(name === 'locati') renderTrattativeVenduti('locato');
   else if(name === 'inattivi') renderInattivi();
   else if(name === 'attivita') { attivitaFilter = 'tutti'; renderAttivita(); }
   else if(name === 'calendario') renderCalendario();
@@ -1022,12 +1034,12 @@ function statoColor(s) { return s==='disponibile'?'#4ade80':s==='trattativa'?'#f
 function contrattoColor(c) { return c==='vendita'?'#c8a96e':c==='locazione'?'#a78bfa':'#34d399'; }
 function contrattoIcon(c) { return c==='vendita'?'🏷️':c==='locazione'?'📋':'🔑'; }
 function incaricoColor(t) {
-  return t==='incarico'?'#60a5fa':t==='trattativa'?'#fb923c':t==='notizia'?'#4ade80':t==='venduto'?'#34d399':t==='inattivo'?'#6b7280':'#f472b6';
+  return t==='incarico'?'#60a5fa':t==='trattativa'?'#fb923c':t==='notizia'?'#4ade80':t==='venduto'?'#34d399':t==='locato'?'#a78bfa':t==='inattivo'?'#6b7280':'#f472b6';
 }
 function incaricoLabel(t) {
-  return t==='incarico'?'📋 Incarico':t==='trattativa'?'🤝 Trattativa':t==='notizia'?'📣 Notizia':t==='venduto'?'✅ Venduto':t==='inattivo'?'📦 Inattivo':'🔔 Concorrenza';
+  return t==='incarico'?'📋 Incarico':t==='trattativa'?'🤝 Trattativa':t==='notizia'?'📣 Notizia':t==='venduto'?'✅ Venduto':t==='locato'?'🔑 Locato':t==='inattivo'?'📦 Inattivo':'🔔 Concorrenza';
 }
-function isInattivo(t) { return t==='inattivo'||t==='notizia'||t==='concorrenza'||t==='venduto'; }
+function isInattivo(t) { return t==='inattivo'||t==='notizia'||t==='concorrenza'||t==='venduto'||t==='locato'; }
 function isIncaricoScaduto(data) { return data && fmtDate(new Date()) > data; }
 function nextId(arr) { return arr.length ? Math.max(...arr.map(x=>x.id)) + 1 : 1; }
 function toast(msg, type='green') {
@@ -1918,27 +1930,30 @@ function renderTrattativeVenduti(tipo) {
   if(!db.trattative) db.trattative = [];
   if(!db.vendutiClienti) db.vendutiClienti = [];
   const isVenduto = tipo === 'venduto';
-  const listEl = document.getElementById(isVenduto ? 'list-venduti' : 'list-trattative');
-  const countEl = document.getElementById(isVenduto ? 'venduti-count' : 'tratt-count');
+  const isLocato  = tipo === 'locato';
+  const isFinale  = isVenduto || isLocato;
+  const listEl  = isVenduto ? document.getElementById('list-venduti')   : isLocato ? document.getElementById('list-locati')    : document.getElementById('list-trattative');
+  const countEl = isVenduto ? document.getElementById('venduti-count')  : isLocato ? document.getElementById('locati-count')   : document.getElementById('tratt-count');
   if(!listEl) return;
 
-  const accentCol = isVenduto ? '#34d399' : '#fb923c';
+  const accentCol = isVenduto ? '#34d399' : isLocato ? '#a78bfa' : '#fb923c';
 
-  if(isVenduto) {
-    // Venduti: solo immobili con tipoIncarico=venduto che esistono ancora nel db
-    const immVenduti = db.immobili.filter(i => i.tipoIncarico === 'venduto');
+  if(isFinale) {
+    // Venduti/Locati: immobili con tipoIncarico corrispondente
+    const immFinali = db.immobili.filter(i => i.tipoIncarico === tipo);
     // Pulisci vendutiClienti orfani
     db.vendutiClienti = (db.vendutiClienti||[]).filter(v => db.immobili.find(i => i.id === v.immobileId));
-    if(countEl) countEl.textContent = `${immVenduti.length} immobili venduti`;
-    if(!immVenduti.length) {
-      listEl.innerHTML = `<div style="color:var(--muted);font-size:14px;padding:20px">Nessun immobile venduto.</div>`;
+    if(countEl) countEl.textContent = `${immFinali.length} immobili ${isVenduto ? 'venduti' : 'locati'}`;
+    if(!immFinali.length) {
+      listEl.innerHTML = `<div style="color:var(--muted);font-size:14px;padding:20px">Nessun immobile ${isVenduto ? 'venduto' : 'locato'}.</div>`;
       return;
     }
-    listEl.innerHTML = immVenduti.map(imm => {
+    listEl.innerHTML = immFinali.map(imm => {
       const prop = db.proprietari.find(p => p.id === imm.proprietarioId);
-      const link = db.vendutiClienti.find(l => l.immobileId === imm.id);
+      const link = db.vendutiClienti.find(l => l.immobileId === imm.id && l.tipo === tipo) ||
+                   db.vendutiClienti.find(l => l.immobileId === imm.id);
       const cliente = link ? db.acquirenti.find(a => a.id === link.clienteId) : null;
-      return cardIncrocio(imm, prop, cliente, link, 'venduto');
+      return cardIncrocio(imm, prop, cliente, link, tipo);
     }).join('');
 
   } else {
@@ -1998,7 +2013,8 @@ function renderTrattativeVenduti(tipo) {
                 <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
                   ${isVend ? badge('✅ Venduto','#34d399') : isChiusa ? badge('🔒 Trattativa chiusa','#6b7280') : ''}
                   ${!hasVenduto && !isChiusa && !isVend ? `<button onclick="modificaTrattativa(${t.id})" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:10px;font-family:'DM Sans',sans-serif">✏️</button>` : ''}
-                  ${!hasVenduto && !isVend ? `<button onclick="trattativaVenduto(${t.id})" style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.4);color:#34d399;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:10px;font-family:'DM Sans',sans-serif">✅ Venduto</button>` : ''}
+                  ${!hasVenduto && !isVend ? `<button onclick="trattativaVenduto(${t.id},'venduto')" style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.4);color:#34d399;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:10px;font-family:'DM Sans',sans-serif">✅ Venduto</button>` : ''}
+                  ${!hasVenduto && !isVend ? `<button onclick="trattativaVenduto(${t.id},'locato')" style="background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.4);color:#a78bfa;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:10px;font-family:'DM Sans',sans-serif">🔑 Locato</button>` : ''}
                   ${!hasVenduto && !isChiusa && !isVend ? `<button onclick="chiudiTrattativa(${t.id})" style="background:none;border:1px solid var(--border);color:#6b7280;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:10px;font-family:'DM Sans',sans-serif">🔒 Chiudi</button>` : ''}
                   ${!hasVenduto ? `<button onclick="eliminaTrattativa(${t.id})" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:14px;padding:2px 6px">×</button>` : ''}
                 </div>
@@ -2137,7 +2153,8 @@ function chiudiTrattativa(trattId) {
   saveDb(); renderTrattativeVenduti('trattativa'); toast('🔒 Trattativa chiusa');
 }
 
-function trattativaVenduto(trattId) {
+function trattativaVenduto(trattId, tipoFinale) {
+  if(!tipoFinale) tipoFinale = 'venduto';
   if(!db.trattative) return;
   if(!db.vendutiClienti) db.vendutiClienti = [];
   const t = db.trattative.find(x => x.id === trattId);
@@ -2145,22 +2162,23 @@ function trattativaVenduto(trattId) {
   const immOriginale = db.immobili.find(i => i.id === t.immobileId);
   if(!immOriginale) return;
 
-  // Segna la trattativa come venduto
+  // Segna la trattativa come venduto/locato
   db.trattative = db.trattative.map(x => x.id === trattId ? {...x, stato: 'venduto'} : x);
   // Chiudi tutte le altre trattative dello stesso immobile
   db.trattative = db.trattative.map(x => (x.immobileId === t.immobileId && x.id !== trattId && x.stato === 'aperta') ? {...x, stato: 'chiusa'} : x);
-  // Segna l'immobile originale come venduto (read-only in Venduti)
-  db.immobili = db.immobili.map(i => i.id === t.immobileId ? {...i, tipoIncarico: 'venduto'} : i);
-  // Crea una copia modificabile in Inattivi
+  // Segna l'immobile originale come venduto/locato (read-only)
+  db.immobili = db.immobili.map(i => i.id === t.immobileId ? {...i, tipoIncarico: tipoFinale} : i);
+  // Crea copia modificabile in Inattivi
   const copia = {...immOriginale, id: nextId(db.immobili), tipoIncarico: 'inattivo', fineIncarico: new Date().toISOString().slice(0,10)};
   db.immobili.push(copia);
   // Aggiungi a vendutiClienti
   db.vendutiClienti = db.vendutiClienti.filter(v => v.immobileId !== t.immobileId);
-  db.vendutiClienti.push({ id: nextId(db.vendutiClienti), immobileId: t.immobileId, clienteId: t.clienteId, data: t.data || new Date().toISOString().slice(0,10) });
+  db.vendutiClienti.push({ id: nextId(db.vendutiClienti), immobileId: t.immobileId, clienteId: t.clienteId, data: t.data || new Date().toISOString().slice(0,10), tipo: tipoFinale });
   saveDb();
   renderTrattativeVenduti('trattativa');
   renderInattivi();
-  toast('✅ Venduto! Copia modificabile aggiunta in Inattivi.');
+  const label = tipoFinale === 'locato' ? '🔑 Locato' : '✅ Venduto';
+  toast(`${label}! Copia modificabile aggiunta in Inattivi.`);
 }
 
 function eliminaTrattativa(trattId) {
@@ -2211,14 +2229,23 @@ function rimuoviSelCliente() {
 function spostaInVenduto(id) {
   const immOriginale = db.immobili.find(i => i.id === id);
   if(!immOriginale) return;
-  // Segna originale come venduto (read-only)
   db.immobili = db.immobili.map(i => i.id===id ? {...i, tipoIncarico:'venduto'} : i);
-  // Crea copia modificabile in Inattivi
   const copia = {...immOriginale, id: nextId(db.immobili), tipoIncarico: 'inattivo', fineIncarico: new Date().toISOString().slice(0,10)};
   db.immobili.push(copia);
   saveDb(); renderInattivi(); renderTrattativeVenduti('venduto'); showPage('venduti');
   setTimeout(() => apriSelClienteModal(id, 'venduto'), 300);
   toast('✅ Venduto! Copia modificabile aggiunta in Inattivi.');
+}
+
+function spostaInLocato(id) {
+  const immOriginale = db.immobili.find(i => i.id === id);
+  if(!immOriginale) return;
+  db.immobili = db.immobili.map(i => i.id===id ? {...i, tipoIncarico:'locato'} : i);
+  const copia = {...immOriginale, id: nextId(db.immobili), tipoIncarico: 'inattivo', fineIncarico: new Date().toISOString().slice(0,10)};
+  db.immobili.push(copia);
+  saveDb(); renderInattivi(); renderTrattativeVenduti('locato'); showPage('locati');
+  setTimeout(() => apriSelClienteModal(id, 'locato'), 300);
+  toast('🔑 Locato! Copia modificabile aggiunta in Inattivi.');
 }
 
 
@@ -2227,7 +2254,7 @@ function renderImmobili() {
   const listEl = document.getElementById('list-immobili');
   if(!countEl || !listEl) return;
   // Solo immobili attivi (non inattivi/notizia/concorrenza)
-  const attivi = db.immobili.filter(i => !isInattivo(i.tipoIncarico) && i.tipoIncarico !== 'venduto');
+  const attivi = db.immobili.filter(i => !isInattivo(i.tipoIncarico) && i.tipoIncarico !== 'venduto' && i.tipoIncarico !== 'locato');
   const inattivi = db.immobili.filter(i => i.tipoIncarico==='inattivo'||i.tipoIncarico==='notizia'||i.tipoIncarico==='concorrenza');
   const vend = db.immobili.filter(i => i.tipoIncarico === 'venduto');
   const trattAperte = (db.trattative||[]).filter(t => t.stato === 'aperta').length;
@@ -2282,7 +2309,8 @@ function immobileCard(i, isInatt = false) {
           <button onclick="closeDropdown('dd-imm-${i.id}');openDriveModal('immobile', ${i.id})">📁 Cartella Drive</button>
           <button onclick="closeDropdown('dd-imm-${i.id}');pdfImmobile(${i.id})">📄 Report PDF</button>
           ${isInatt ? `<button style="color:#34d399" onclick="closeDropdown('dd-imm-${i.id}');riattivaImmobile(${i.id})">✅ Riattiva</button>` : ''}
-          ${isInatt && i.tipoIncarico !== 'venduto' ? `<button style="color:#34d399" onclick="closeDropdown('dd-imm-${i.id}');spostaInVenduto(${i.id})">✅ → Venduto</button>` : ''}
+          ${isInatt && i.tipoIncarico !== 'venduto' && i.tipoIncarico !== 'locato' ? `<button style="color:#34d399" onclick="closeDropdown('dd-imm-${i.id}');spostaInVenduto(${i.id})">✅ → Venduto</button>` : ''}
+          ${isInatt && i.tipoIncarico !== 'venduto' && i.tipoIncarico !== 'locato' ? `<button style="color:#a78bfa" onclick="closeDropdown('dd-imm-${i.id}');spostaInLocato(${i.id})">🔑 → Locato</button>` : ''}
           <button class="del" onclick="closeDropdown('dd-imm-${i.id}');deleteImmobile(${i.id})">🗑 Elimina</button>
         </div>
       </div>
@@ -2600,6 +2628,7 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
             <option value="notizia" ${data.tipoIncarico==='notizia'?'selected':''}>📣 Notizia</option>
             <option value="concorrenza" ${data.tipoIncarico==='concorrenza'?'selected':''}>🔔 Concorrenza</option>
             <option value="venduto" ${data.tipoIncarico==='venduto'?'selected':''}>✅ Venduto</option>
+            <option value="locato" ${data.tipoIncarico==='locato'?'selected':''}>🔑 Locato</option>
             <option value="inattivo" ${data.tipoIncarico==='inattivo'?'selected':''}>📦 Inattivo</option>
           </select>
         </div>
@@ -2886,7 +2915,7 @@ function saveImmobile() {
     const prevTipo = (db.immobili.find(i => i.id===editingId)||{}).tipoIncarico;
     db.immobili = db.immobili.map(i => i.id===editingId ? {...i,...obj} : i);
     // Se il tipo è cambiato in venduto, crea copia in Inattivi
-    if(obj.tipoIncarico === 'venduto' && prevTipo !== 'venduto') {
+    if((obj.tipoIncarico === 'venduto' || obj.tipoIncarico === 'locato') && prevTipo !== obj.tipoIncarico) {
       const immOriginale = db.immobili.find(i => i.id===editingId);
       if(immOriginale) {
         const copia = {...immOriginale, id: nextId(db.immobili), tipoIncarico:'inattivo', fineIncarico: new Date().toISOString().slice(0,10)};
@@ -2895,7 +2924,7 @@ function saveImmobile() {
     }
   } else {
     obj.id = nextId(db.immobili); db.immobili.push(obj); savedId = obj.id;
-    if(obj.tipoIncarico === 'venduto') {
+    if(obj.tipoIncarico === 'venduto' || obj.tipoIncarico === 'locato') {
       const copia = {...obj, id: nextId(db.immobili), tipoIncarico:'inattivo', fineIncarico: new Date().toISOString().slice(0,10)};
       db.immobili.push(copia);
     }
@@ -2905,6 +2934,7 @@ function saveImmobile() {
   const tipo = obj.tipoIncarico;
   if(tipo === 'trattativa') { renderTrattativeVenduti('trattativa'); showPage('trattative'); setTimeout(() => apriSelClienteModal(savedId, 'trattativa'), 300); }
   else if(tipo === 'venduto') { renderTrattativeVenduti('venduto'); showPage('venduti'); setTimeout(() => apriSelClienteModal(savedId, 'venduto'), 300); }
+  else if(tipo === 'locato') { renderTrattativeVenduti('locato'); showPage('locati'); setTimeout(() => apriSelClienteModal(savedId, 'locato'), 300); }
   else if(isInattivo(tipo)) { renderInattivi(); showPage('inattivi'); }
   else { renderImmobili(); showPage('immobili'); }
   toast(editingId ? 'Modifiche salvate' : 'Immobile aggiunto!');
@@ -3399,6 +3429,7 @@ function dbDeleteRecord(tableKey, id) {
   try { renderIncroci(); } catch(e){}
   try { renderTrattativeVenduti('trattativa'); } catch(e){}
   try { renderTrattativeVenduti('venduto'); } catch(e){}
+  try { renderTrattativeVenduti('locato'); } catch(e){}
   try { renderOperatori(); } catch(e){}
   renderDatabase();
   toast('Record eliminato');
