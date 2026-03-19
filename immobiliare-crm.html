@@ -3365,6 +3365,19 @@ function dbDeleteRecord(tableKey, id) {
   if(!confirm('Eliminare questo record?')) return;
   db[tableKey] = (db[tableKey]||[]).filter(r => r.id !== id);
   saveDb();
+  // Re-render tutte le pagine che potrebbero mostrare questo record
+  try { renderDashboard(); } catch(e){}
+  try { renderPersone('acquirenti'); } catch(e){}
+  try { renderPersone('proprietari'); } catch(e){}
+  try { renderAltri(); } catch(e){}
+  try { renderImmobili(); } catch(e){}
+  try { renderInattivi(); } catch(e){}
+  try { renderAttivita(); } catch(e){}
+  try { renderRichieste(); } catch(e){}
+  try { renderIncroci(); } catch(e){}
+  try { renderTrattativeVenduti('trattativa'); } catch(e){}
+  try { renderTrattativeVenduti('venduto'); } catch(e){}
+  try { renderOperatori(); } catch(e){}
   renderDatabase();
   toast('Record eliminato');
 }
