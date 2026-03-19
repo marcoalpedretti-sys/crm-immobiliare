@@ -1973,7 +1973,7 @@ function renderTrattativeVenduti(tipo) {
       if(!imm) return '';
       const prop = db.proprietari.find(p => p.id === imm.proprietarioId);
       const trattImm = db.trattative.filter(t => t.immobileId === immId);
-      const hasVenduto = trattImm.some(t => t.stato === 'venduto');
+      const hasVenduto = trattImm.some(t => t.stato === 'venduto' || t.stato === 'locato');
 
       return `<div class="card" style="border-left:3px solid ${accentCol};margin-bottom:16px">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px">
@@ -1988,7 +1988,7 @@ function renderTrattativeVenduti(tipo) {
             ${prop ? `<div style="margin-top:6px;font-size:12px;color:var(--muted)">🏠 Proprietario: <strong>${prop.nome} ${prop.cognome}</strong>${prop.telefono?` · <a href="tel:${prop.telefono}" style="color:var(--muted);text-decoration:none">📞 ${prop.telefono}</a>`:''}</div>` : ''}
           </div>
           ${hasVenduto
-            ? `<span style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.4);color:#34d399;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600">✅ Venduto</span>`
+            ? (() => { const finaleTratt = trattImm.find(t => t.stato==='venduto'||t.stato==='locato'); return finaleTratt ? badge(finaleTratt.stato==='locato'?'🔑 Locato':'✅ Venduto', finaleTratt.stato==='locato'?'#a78bfa':'#34d399') : ''; })()
             : `<button onclick="nuovaTrattativa(${immId})" style="background:rgba(251,146,60,0.15);border:1px solid rgba(251,146,60,0.4);color:#fb923c;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;flex-shrink:0">+ Trattativa</button>`
           }
         </div>
@@ -1997,8 +1997,10 @@ function renderTrattativeVenduti(tipo) {
           ${trattImm.map(t => {
             const cliente = t.clienteId ? db.acquirenti.find(a => a.id === t.clienteId) : null;
             const isChiusa = t.stato === 'chiusa';
-            const isVend = t.stato === 'venduto';
-            const borderCol = isVend ? '#34d399' : isChiusa ? '#6b7280' : '#fb923c';
+            const isVend   = t.stato === 'venduto';
+            const isLoc    = t.stato === 'locato';
+            const isFinaleRow = isVend || isLoc;
+            const borderCol = isVend ? '#34d399' : isLoc ? '#a78bfa' : isChiusa ? '#6b7280' : '#fb923c';
             return `<div style="background:var(--bg);border-radius:10px;padding:12px 14px;border:1px solid ${borderCol}33;opacity:${isChiusa?'0.65':'1'}">
               <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
                 <div style="display:flex;align-items:center;gap:10px;flex:1">
@@ -2011,11 +2013,11 @@ function renderTrattativeVenduti(tipo) {
                   ${t.data ? `<span style="color:var(--muted);font-size:11px">📅 ${t.data}</span>` : ''}
                 </div>
                 <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
-                  ${isVend ? badge('✅ Venduto','#34d399') : isChiusa ? badge('🔒 Trattativa chiusa','#6b7280') : ''}
-                  ${!hasVenduto && !isChiusa && !isVend ? `<button onclick="modificaTrattativa(${t.id})" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:10px;font-family:'DM Sans',sans-serif">✏️</button>` : ''}
-                  ${!hasVenduto && !isVend ? `<button onclick="trattativaVenduto(${t.id},'venduto')" style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.4);color:#34d399;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:10px;font-family:'DM Sans',sans-serif">✅ Venduto</button>` : ''}
-                  ${!hasVenduto && !isVend ? `<button onclick="trattativaVenduto(${t.id},'locato')" style="background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.4);color:#a78bfa;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:10px;font-family:'DM Sans',sans-serif">🔑 Locato</button>` : ''}
-                  ${!hasVenduto && !isChiusa && !isVend ? `<button onclick="chiudiTrattativa(${t.id})" style="background:none;border:1px solid var(--border);color:#6b7280;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:10px;font-family:'DM Sans',sans-serif">🔒 Chiudi</button>` : ''}
+                  ${isVend ? badge('✅ Venduto','#34d399') : isLoc ? badge('🔑 Locato','#a78bfa') : isChiusa ? badge('🔒 Trattativa chiusa','#6b7280') : ''}
+                  ${!hasVenduto && !isChiusa && !isFinaleRow ? `<button onclick="modificaTrattativa(${t.id})" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:10px;font-family:'DM Sans',sans-serif">✏️</button>` : ''}
+                  ${!hasVenduto && !isFinaleRow ? `<button onclick="trattativaVenduto(${t.id},'venduto')" style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.4);color:#34d399;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:10px;font-family:'DM Sans',sans-serif">✅ Venduto</button>` : ''}
+                  ${!hasVenduto && !isFinaleRow ? `<button onclick="trattativaVenduto(${t.id},'locato')" style="background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.4);color:#a78bfa;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:10px;font-family:'DM Sans',sans-serif">🔑 Locato</button>` : ''}
+                  ${!hasVenduto && !isChiusa && !isFinaleRow ? `<button onclick="chiudiTrattativa(${t.id})" style="background:none;border:1px solid var(--border);color:#6b7280;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:10px;font-family:'DM Sans',sans-serif">🔒 Chiudi</button>` : ''}
                   ${!hasVenduto ? `<button onclick="eliminaTrattativa(${t.id})" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:14px;padding:2px 6px">×</button>` : ''}
                 </div>
               </div>
@@ -2035,7 +2037,7 @@ function cardIncrocio(imm, prop, cliente, link, tipo) {
       <div style="flex:1">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
           <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:600">🏢 ${imm.titolo}</div>
-          ${isReadOnly ? badge('✅ Venduto','#34d399') : ''}
+          ${isReadOnly ? badge(tipo==='locato'?'🔑 Locato':'✅ Venduto', tipo==='locato'?'#a78bfa':'#34d399') : ''}
         </div>
         <div style="color:var(--muted);font-size:12px">📍 ${imm.indirizzo||''}, ${imm.citta||''}</div>
         <div style="display:flex;gap:12px;margin-top:6px;flex-wrap:wrap;align-items:center">
@@ -2162,8 +2164,8 @@ function trattativaVenduto(trattId, tipoFinale) {
   const immOriginale = db.immobili.find(i => i.id === t.immobileId);
   if(!immOriginale) return;
 
-  // Segna la trattativa come venduto/locato
-  db.trattative = db.trattative.map(x => x.id === trattId ? {...x, stato: 'venduto'} : x);
+  // Segna la trattativa come venduto o locato
+  db.trattative = db.trattative.map(x => x.id === trattId ? {...x, stato: tipoFinale} : x);
   // Chiudi tutte le altre trattative dello stesso immobile
   db.trattative = db.trattative.map(x => (x.immobileId === t.immobileId && x.id !== trattId && x.stato === 'aperta') ? {...x, stato: 'chiusa'} : x);
   // Segna l'immobile originale come venduto/locato (read-only)
@@ -3404,6 +3406,16 @@ function dbDeleteRecord(tableKey, id) {
     const immIds = db.immobili.map(i => i.id);
     db.vendutiClienti = (db.vendutiClienti||[]).filter(v => immIds.includes(v.immobileId));
     db.trattative = (db.trattative||[]).filter(t => immIds.includes(t.immobileId));
+  }
+  if(tableKey === 'vendutiClienti') {
+    // L'immobile venduto/locato non ha più un record vendutiClienti — riportalo a inattivo
+    const linkedImmIds = (db.vendutiClienti||[]).map(v => v.immobileId);
+    db.immobili = db.immobili.map(i => {
+      if((i.tipoIncarico === 'venduto' || i.tipoIncarico === 'locato') && !linkedImmIds.includes(i.id)) {
+        return {...i, tipoIncarico: 'inattivo'};
+      }
+      return i;
+    });
   }
   if(tableKey === 'acquirenti') {
     const acqIds = db.acquirenti.map(a => a.id);
