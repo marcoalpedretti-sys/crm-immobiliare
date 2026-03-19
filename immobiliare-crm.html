@@ -245,7 +245,20 @@ window._firebaseReady = true;
   #cal-date-picker::-webkit-calendar-picker-indicator { filter: invert(0.7) sepia(1) saturate(2) hue-rotate(5deg); cursor:pointer; }
   @media (max-width:768px) { .cal-wrap.week { grid-template-columns:36px repeat(7,1fr); } .cal-event { font-size:9px; } }
 
-  /* GOOGLE BAR — bottom fixed */
+  /* OPERATORI MULTI-SELECT */
+  .op-select { position:relative; }
+  .op-tags { display:flex; flex-wrap:wrap; gap:6px; min-height:36px; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:6px 10px; cursor:pointer; align-items:center; }
+  .op-tags:hover { border-color:var(--accent); }
+  .op-tag { display:inline-flex; align-items:center; gap:4px; background:rgba(200,169,110,0.15); border:1px solid rgba(200,169,110,0.4); color:var(--accent); border-radius:20px; padding:2px 8px; font-size:12px; font-weight:600; }
+  .op-tag .op-tag-x { cursor:pointer; font-size:14px; line-height:1; opacity:0.7; }
+  .op-tag .op-tag-x:hover { opacity:1; }
+  .op-placeholder { color:var(--muted); font-size:13px; }
+  .op-dropdown { display:none; position:absolute; top:calc(100% + 4px); left:0; right:0; background:var(--card); border:1px solid var(--border); border-radius:10px; z-index:200; box-shadow:0 8px 24px rgba(0,0,0,0.4); max-height:200px; overflow-y:auto; }
+  .op-dropdown.open { display:block; }
+  .op-dropdown-item { display:flex; align-items:center; gap:10px; padding:10px 14px; cursor:pointer; font-size:13px; color:var(--text); transition:background 0.15s; }
+  .op-dropdown-item:hover { background:rgba(255,255,255,0.05); }
+  .op-dropdown-item.selected { color:var(--accent); }
+  .op-dropdown-item input { accent-color:var(--accent); width:15px; height:15px; cursor:pointer; }
   #google-bar {
     position: fixed; bottom: 0; left: var(--sidebar-w); right: 0; z-index: 100;
     background: var(--card); border-top: 1px solid var(--border);
@@ -319,6 +332,7 @@ window._firebaseReady = true;
   <button class="nav-btn" onclick="showPage('richieste')">🔍 &nbsp;Richieste</button>
   <button class="nav-btn" onclick="showPage('incroci')">🔀 &nbsp;Incroci</button>
   <button class="nav-btn" onclick="showPage('immobili')">🏢 &nbsp;Immobili</button>
+  <button class="nav-btn" onclick="showPage('inattivi')">📦 &nbsp;Inattivi</button>
   <button class="nav-btn" onclick="showPage('attivita')">📋 &nbsp;Attività</button>
   <button class="nav-btn" onclick="showPage('calendario')">📅 &nbsp;Calendario</button>
   <div style="margin-top:auto; padding: 0 24px 16px; display:flex; flex-direction:column; gap:8px;">
@@ -435,6 +449,21 @@ window._firebaseReady = true;
       </div>
     </div>
     <div id="list-immobili"></div>
+  </div>
+
+  <!-- INATTIVI -->
+  <div id="page-inattivi" class="page">
+    <div class="section-header">
+      <div>
+        <h1 class="section-title">Inattivi</h1>
+        <p class="section-sub" id="inatt-count"></p>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-dashboard" onclick="showPage('dashboard')">◈ Dashboard</button>
+        <button class="btn-dashboard" onclick="showPage('immobili')">🏢 Immobili</button>
+      </div>
+    </div>
+    <div id="list-inattivi"></div>
   </div>
 
   <!-- OPERATORI -->
@@ -889,6 +918,7 @@ function renderPage(name) {
   else if(name === 'richieste') renderRichieste();
   else if(name === 'incroci') renderIncroci();
   else if(name === 'immobili') renderImmobili();
+  else if(name === 'inattivi') renderInattivi();
   else if(name === 'attivita') { attivitaFilter = 'tutti'; renderAttivita(); }
   else if(name === 'calendario') renderCalendario();
   else if(name === 'impostazioni') {
@@ -915,8 +945,13 @@ function tipoColor(t) { return t==='telefonata'?'#4ade80':t==='messaggio'?'#60a5
 function statoColor(s) { return s==='disponibile'?'#4ade80':s==='trattativa'?'#fb923c':'#f87171'; }
 function contrattoColor(c) { return c==='vendita'?'#c8a96e':c==='locazione'?'#a78bfa':'#34d399'; }
 function contrattoIcon(c) { return c==='vendita'?'🏷️':c==='locazione'?'📋':'🔑'; }
-function incaricoColor(t) { return t==='incarico'?'#60a5fa':t==='notizia'?'#4ade80':'#fb923c'; }
-function incaricoLabel(t) { return t==='incarico'?'📋 Incarico':t==='notizia'?'📣 Notizia':'🔔 Concorrenza'; }
+function incaricoColor(t) {
+  return t==='incarico'?'#60a5fa':t==='trattativa'?'#fb923c':t==='notizia'?'#4ade80':t==='venduto'?'#34d399':t==='inattivo'?'#6b7280':'#f472b6';
+}
+function incaricoLabel(t) {
+  return t==='incarico'?'📋 Incarico':t==='trattativa'?'🤝 Trattativa':t==='notizia'?'📣 Notizia':t==='venduto'?'✅ Venduto':t==='inattivo'?'📦 Inattivo':'🔔 Concorrenza';
+}
+function isInattivo(t) { return t==='inattivo'||t==='notizia'||t==='concorrenza'||t==='venduto'; }
 function isIncaricoScaduto(data) { return data && fmtDate(new Date()) > data; }
 function nextId(arr) { return arr.length ? Math.max(...arr.map(x=>x.id)) + 1 : 1; }
 function toast(msg, type='green') {
@@ -938,7 +973,7 @@ function renderDashboard() {
     { l:'Clienti',    v:db.acquirenti.length,                                      c:'#60a5fa', i:'👥', page:'acquirenti' },
     { l:'Proprietari',   v:db.proprietari.length,                                     c:'#4ade80', i:'🏠', page:'proprietari' },
     { l:'Immobili',      v:db.immobili.length,                                        c:'#c8a96e', i:'🏢', page:'immobili' },
-    { l:'In Trattativa', v:db.immobili.filter(i=>i.stato==='trattativa').length,      c:'#fb923c', i:'🤝', page:'immobili' },
+    { l:'In Trattativa', v:db.immobili.filter(i=>i.tipoIncarico==='trattativa').length,      c:'#fb923c', i:'🤝', page:'immobili' },
     { l:'Richieste',     v:(db.richieste||[]).length,                                 c:'#a78bfa', i:'🔍', page:'richieste' },
     { l:'Incroci',       v:incrociCount,                                              c:'#f472b6', i:'🔀', page:'incroci' },
     { l:'Totale Attività',v:db.attivita.length,                                       c:'#60a5fa', i:'📋', page:'attivita' },
@@ -1055,6 +1090,14 @@ function getOperatoriNomi(ids) {
   return ids.map(id => { const o = db.operatori.find(x=>x.id===id); return o?o.nome+' '+o.cognome:''; }).filter(Boolean).join(', ');
 }
 
+function operatoriTags(ids) {
+  if(!ids || !ids.length || !db.operatori) return '';
+  return ids.map(id => {
+    const o = db.operatori.find(x => x.id === id);
+    return o ? `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(200,169,110,0.12);border:1px solid rgba(200,169,110,0.35);color:var(--accent);border-radius:20px;padding:2px 8px;font-size:11px;font-weight:600">👨‍💼 ${o.nome} ${o.cognome}</span>` : '';
+  }).filter(Boolean).join(' ');
+}
+
 function getOperatoreNome(id) {
   if(!id || !db.operatori) return null;
   const op = db.operatori.find(o => o.id === id);
@@ -1110,7 +1153,7 @@ function personaCard(p, tipo) {
             : `<span style="background:rgba(248,113,113,0.1);color:#f87171;border:1px solid rgba(248,113,113,0.3);border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700">🛡️ Antiriciclaggio ✗</span>`}
         </div>` : ''}
         ${p.driveUrl ? `<a href="${p.driveUrl}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;margin-top:6px;color:#34a853;font-size:12px;text-decoration:none;background:rgba(52,168,83,0.1);border:1px solid rgba(52,168,83,0.3);border-radius:6px;padding:3px 8px;">📁 Cartella Drive</a>` : ''}
-        ${p.operatoriIds && p.operatoriIds.length ? `<div style="color:var(--muted);font-size:12px;margin-top:4px">👨‍💼 ${getOperatoriNomi(p.operatoriIds)}</div>` : ''}
+        ${p.operatoriIds && p.operatoriIds.length ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">${operatoriTags(p.operatoriIds)}</div>` : ''}
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
         ${badge(mieAtt.length + ' attività', mieAtt.length>0?'#4ade80':'#6b6b8a')}
@@ -1356,7 +1399,7 @@ function renderIncroci() {
             ${acq.telefono ? `<a href="tel:${acq.telefono}" style="color:var(--text);font-size:13px;text-decoration:none">📞 ${acq.telefono}</a>` : ''}
             ${acq.email ? `<a href="https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(acq.email)}" target="_blank" style="color:var(--text);font-size:13px;text-decoration:none">✉️ ${acq.email}</a>` : ''}
             ${acq.citta ? `<span style="color:var(--muted);font-size:13px">📍 ${acq.citta}</span>` : ''}
-            ${acq.operatoriIds && acq.operatoriIds.length ? `<span style="color:var(--muted);font-size:12px">👨‍💼 ${getOperatoriNomi(acq.operatoriIds)}</span>` : ''}
+            ${acq.operatoriIds && acq.operatoriIds.length ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:2px">${operatoriTags(acq.operatoriIds)}</div>` : ''}
           </div>` : ''}
           <div style="display:flex;gap:10px;margin-top:6px;flex-wrap:wrap">
             ${r.zonaDesiderata ? `<span style="color:var(--muted);font-size:12px">📍 ${r.zonaDesiderata}</span>` : ''}
@@ -1387,11 +1430,10 @@ function renderIncroci() {
                 <span style="color:var(--muted);font-size:12px">📐 ${imm.mq} mq</span>
                 <span style="color:var(--muted);font-size:12px">🚪 ${imm.locali} locali</span>
                 ${imm.contratto ? badge(contrattoIcon(imm.contratto)+' '+imm.contratto, contrattoColor(imm.contratto)) : ''}
-                ${badge(imm.stato, statoColor(imm.stato))}
                 ${imm.tipoIncarico ? badge(incaricoLabel(imm.tipoIncarico), incaricoColor(imm.tipoIncarico)) : ''}
               </div>
               ${imm.fineIncarico ? `<div style="font-size:11px;margin-top:4px;color:${isIncaricoScaduto(imm.fineIncarico)?'#f87171':'#fb923c'}">⏳ Fine incarico: ${imm.fineIncarico}${isIncaricoScaduto(imm.fineIncarico)?' · <strong>SCADUTO</strong>':''}</div>` : ''}
-              ${imm.operatoriIds && imm.operatoriIds.length ? `<div style="font-size:11px;margin-top:4px;color:var(--muted)">👨‍💼 ${getOperatoriNomi(imm.operatoriIds)}</div>` : ''}
+              ${imm.operatoriIds && imm.operatoriIds.length ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">${operatoriTags(imm.operatoriIds)}</div>` : ''}
               <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px">
                 ${criteri.map(c=>`<span style="font-size:10px;background:rgba(74,222,128,0.1);color:#4ade80;border-radius:4px;padding:2px 6px">${c}</span>`).join('')}
               </div>
@@ -1443,7 +1485,6 @@ function matchRichieste() {
               <div style="font-size:13px;font-weight:600">${i.titolo}</div>
               <div style="color:var(--muted);font-size:12px">📍 ${i.indirizzo}, ${i.citta} &nbsp;•&nbsp; €${i.prezzo} &nbsp;•&nbsp; ${i.locali} locali &nbsp;•&nbsp; ${i.mq} mq</div>
             </div>
-            ${badge(i.stato, statoColor(i.stato))}
           </div>`).join('')}
       </div>`).join('')}
   </div>`;
@@ -1782,7 +1823,7 @@ function editAttivita(id) {
     <div class="form-group"><label class="form-label">Note</label>
       <textarea class="form-control" id="f-note" rows="3">${a.note||''}</textarea>
     </div>
-    ${db.operatori && db.operatori.length ? `<div class="form-group"><label class="form-label">👨‍💼 Operatori</label><div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;display:flex;flex-wrap:wrap;gap:8px">${(db.operatori||[]).map(o=>`<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--text);white-space:nowrap"><input type="checkbox" value="${o.id}" ${(a.operatoriIds||[]).includes(o.id)?'checked':''} style="accent-color:var(--accent);cursor:pointer"> ${o.nome} ${o.cognome}</label>`).join('')}</div></div>` : ''}
+    ${db.operatori && db.operatori.length ? `<div class="form-group"><label class="form-label">👨‍💼 Operatori</label><div class="op-select" id="op-sel-attivita"></div></div>` : ''}
     <div id="gcal-note" style="display:none;background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.3);border-radius:8px;padding:10px;margin-bottom:14px;font-size:12px;color:#60a5fa">
       📅 Potrai aggiornarlo su Google Calendar dopo il salvataggio
     </div>
@@ -1791,6 +1832,7 @@ function editAttivita(id) {
   document.getElementById('modal-body').innerHTML = html;
   document.getElementById('f-persona-id').value = a.personaId;
   if(gCalConnected && a.tipo==='appuntamento') document.getElementById('gcal-note').style.display='block';
+  if(document.getElementById('op-sel-attivita')) buildOpSelect('op-sel-attivita', a.operatoriIds||[]);
 }
 
 // ─────────────────────────────────────────────
@@ -1800,48 +1842,78 @@ function renderImmobili() {
   const countEl = document.getElementById('imm-count');
   const listEl = document.getElementById('list-immobili');
   if(!countEl || !listEl) return;
-  countEl.textContent = db.immobili.length + ' immobili nel portafoglio';
-  listEl.innerHTML = db.immobili.map(i => {
-    const prop = db.proprietari.find(p => p.id === i.proprietarioId);
-    const acq = db.acquirenti.find(a => a.id === i.acquirenteId);
-    return `<div class="card">
-      <div class="card-header">
-        <div style="flex:1">
-          <div class="card-name">${i.titolo}</div>
-          <div class="card-sub">📍 ${i.indirizzo}, ${i.citta}</div>
-          <div style="display:flex;gap:16px;margin-top:8px;flex-wrap:wrap;align-items:center">
-            <span style="color:var(--accent);font-size:15px;font-weight:700">€${i.prezzo}</span>
-            <span style="color:var(--muted);font-size:13px">📐 ${i.mq} mq</span>
-            <span style="color:var(--muted);font-size:13px">🚪 ${i.locali} locali</span>
-            ${badge(i.stato, statoColor(i.stato))}
-            ${i.contratto ? badge(contrattoIcon(i.contratto)+' '+i.contratto, contrattoColor(i.contratto)) : ''}
-            ${i.tipoIncarico ? badge(incaricoLabel(i.tipoIncarico), incaricoColor(i.tipoIncarico)) : ''}
-          </div>
-          ${i.fineIncarico ? `<div style="margin-top:6px;font-size:12px;color:${isIncaricoScaduto(i.fineIncarico)?'#f87171':'#fb923c'}">⏳ Fine incarico: ${i.fineIncarico}${isIncaricoScaduto(i.fineIncarico)?' · <strong>SCADUTO</strong>':''}</div>` : ''}
-          <div style="margin-top:10px;display:flex;gap:16px;flex-wrap:wrap;align-items:center">
-            ${prop ? `<span style="color:var(--muted);font-size:12px">👤 Proprietario: <span style="color:#60a5fa">${prop.nome} ${prop.cognome}</span></span>` : ''}
-            ${acq ? `<span style="color:var(--muted);font-size:12px">🤝 Cliente: <span style="color:#4ade80">${acq.nome} ${acq.cognome}</span></span>` : ''}
-            ${i.driveUrl ? `<a href="${i.driveUrl}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;color:#34a853;font-size:12px;text-decoration:none;background:rgba(52,168,83,0.1);border:1px solid rgba(52,168,83,0.3);border-radius:6px;padding:3px 8px;">📁 Cartella Drive</a>` : ''}
-            ${i.operatoriIds && i.operatoriIds.length ? `<span style="color:var(--muted);font-size:12px">👨‍💼 ${getOperatoriNomi(i.operatoriIds)}</span>` : ''}
-          </div>
+  // Solo immobili attivi (non inattivi/notizia/concorrenza)
+  const attivi = db.immobili.filter(i => !isInattivo(i.tipoIncarico));
+  const inattivi = db.immobili.filter(i => isInattivo(i.tipoIncarico));
+  countEl.textContent = `${attivi.length} immobili attivi${inattivi.length ? ' · ' + inattivi.length + ' inattivi' : ''}`;
+  listEl.innerHTML = attivi.map(i => immobileCard(i)).join('') || '<span style="color:var(--muted)">Nessun immobile attivo</span>';
+}
+
+function renderInattivi() {
+  const countEl = document.getElementById('inatt-count');
+  const listEl = document.getElementById('list-inattivi');
+  if(!countEl || !listEl) return;
+  const inattivi = db.immobili.filter(i => isInattivo(i.tipoIncarico));
+  countEl.textContent = `${inattivi.length} immobili inattivi`;
+  if(!inattivi.length) {
+    listEl.innerHTML = '<span style="color:var(--muted);font-size:14px">Nessun immobile inattivo.</span>';
+    return;
+  }
+  listEl.innerHTML = inattivi.map(i => immobileCard(i, true)).join('');
+}
+
+function immobileCard(i, isInatt = false) {
+  const prop = db.proprietari.find(p => p.id === i.proprietarioId);
+  const acq = db.acquirenti.find(a => a.id === i.acquirenteId);
+  return `<div class="card" style="${isInatt?'opacity:0.85;border-left:3px solid #6b7280':''}">
+    <div class="card-header">
+      <div style="flex:1">
+        <div class="card-name">${i.titolo}</div>
+        <div class="card-sub">📍 ${i.indirizzo}, ${i.citta}</div>
+        <div style="display:flex;gap:16px;margin-top:8px;flex-wrap:wrap;align-items:center">
+          <span style="color:var(--accent);font-size:15px;font-weight:700">€${i.prezzo}</span>
+          <span style="color:var(--muted);font-size:13px">📐 ${i.mq} mq</span>
+          <span style="color:var(--muted);font-size:13px">🚪 ${i.locali} locali</span>
+          ${(!isInatt && i.stato) ? badge(i.stato, statoColor(i.stato)) : ''}
+          ${i.contratto ? badge(contrattoIcon(i.contratto)+' '+i.contratto, contrattoColor(i.contratto)) : ''}
+          ${i.tipoIncarico ? badge(incaricoLabel(i.tipoIncarico), incaricoColor(i.tipoIncarico)) : ''}
         </div>
-        <div class="actions-wrap">
-          <button class="actions-toggle" onclick="toggleDropdown('dd-imm-${i.id}')">⋯</button>
-          <div class="actions-dropdown" id="dd-imm-${i.id}">
-            <button class="edit" onclick="closeDropdown('dd-imm-${i.id}');openModal('immobile', ${i.id})">✏️ Modifica</button>
-            <button onclick="closeDropdown('dd-imm-${i.id}');openDriveModal('immobile', ${i.id})">📁 Cartella Drive</button>
-            <button onclick="closeDropdown('dd-imm-${i.id}');pdfImmobile(${i.id})">📄 Report PDF</button>
-            <button class="del" onclick="closeDropdown('dd-imm-${i.id}');deleteImmobile(${i.id})">🗑 Elimina</button>
-          </div>
+        ${isInatt && i.fineIncarico ? `<div style="margin-top:5px;font-size:12px;color:var(--muted)">📅 Dal: <strong style="color:var(--text)">${i.fineIncarico}</strong></div>` : ''}
+        ${!isInatt && i.fineIncarico ? `<div style="margin-top:4px;font-size:12px;color:${isIncaricoScaduto(i.fineIncarico)?'#f87171':'#fb923c'}">⏳ Data incarico: ${i.fineIncarico}${isIncaricoScaduto(i.fineIncarico)?' · <strong>SCADUTO</strong>':''}</div>` : ''}
+        <div style="margin-top:8px;display:flex;gap:16px;flex-wrap:wrap;align-items:center">
+          ${prop ? `<span style="color:var(--muted);font-size:12px">👤 Proprietario: <span style="color:#60a5fa">${prop.nome} ${prop.cognome}</span></span>` : ''}
+          ${acq ? `<span style="color:var(--muted);font-size:12px">🤝 Cliente: <span style="color:#4ade80">${acq.nome} ${acq.cognome}</span></span>` : ''}
+          ${i.driveUrl ? `<a href="${i.driveUrl}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;color:#34a853;font-size:12px;text-decoration:none;background:rgba(52,168,83,0.1);border:1px solid rgba(52,168,83,0.3);border-radius:6px;padding:3px 8px;">📁 Cartella Drive</a>` : ''}
+          ${i.operatoriIds && i.operatoriIds.length ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">${operatoriTags(i.operatoriIds)}</div>` : ''}
         </div>
       </div>
-    </div>`;
-  }).join('') || '<span style="color:var(--muted)">Nessun immobile</span>';
+      <div class="actions-wrap">
+        <button class="actions-toggle" onclick="toggleDropdown('dd-imm-${i.id}')">⋯</button>
+        <div class="actions-dropdown" id="dd-imm-${i.id}">
+          <button class="edit" onclick="closeDropdown('dd-imm-${i.id}');openModal('immobile', ${i.id})">✏️ Modifica</button>
+          <button onclick="closeDropdown('dd-imm-${i.id}');openDriveModal('immobile', ${i.id})">📁 Cartella Drive</button>
+          <button onclick="closeDropdown('dd-imm-${i.id}');pdfImmobile(${i.id})">📄 Report PDF</button>
+          ${isInatt ? `<button style="color:#34d399" onclick="closeDropdown('dd-imm-${i.id}');riattivaImmobile(${i.id})">✅ Riattiva</button>` : ''}
+          <button class="del" onclick="closeDropdown('dd-imm-${i.id}');deleteImmobile(${i.id})">🗑 Elimina</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
 }
 
 function deleteImmobile(id) {
   db.immobili = db.immobili.filter(i => i.id !== id);
-  saveDb(); renderImmobili(); toast('Immobile eliminato');
+  saveDb(); renderImmobili(); renderInattivi(); toast('Immobile eliminato');
+}
+
+function riattivaImmobile(id) {
+  db.immobili = db.immobili.map(i => i.id===id ? {...i, tipoIncarico:'incarico', fineIncarico:''} : i);
+  saveDb(); renderInattivi(); renderImmobili();
+  toast('✅ Immobile riattivato come Incarico!');
+}
+
+function onTipoIncaricoChange(sel) {
+  // nessuna azione live necessaria — gestito al salvataggio
 }
 
 // ─────────────────────────────────────────────
@@ -1968,7 +2040,7 @@ function renderAttivita() {
               ${a.luogo ? `<div style="color:#4ade80;font-size:12px">📍 ${a.luogo}</div>` : ''}
               ${a.oraFine ? `<div style="color:var(--muted);font-size:12px">🕐 Fino alle ${a.oraFine}</div>` : ''}
               ${a.durata ? `<div style="color:var(--muted);font-size:12px">⏱ ${a.durata}</div>` : ''}
-              ${a.operatoriIds && a.operatoriIds.length ? `<div style="color:var(--muted);font-size:12px">👨‍💼 ${getOperatoriNomi(a.operatoriIds)}</div>` : ''}
+              ${a.operatoriIds && a.operatoriIds.length ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">${operatoriTags(a.operatoriIds)}</div>` : ''}
             </div>
           </div>
           <div style="display:flex;gap:8px;align-items:center">
@@ -2025,6 +2097,7 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
   const opOpts = '<option value="">-- nessuno --</option>' + (db.operatori||[]).map(o=>`<option value="${o.id}" ${data.operatoreId===o.id?'selected':''}>${o.nome} ${o.cognome}</option>`).join('');
 
   let html = '';
+  let immOpIds = [];
   if(tipo==='operatore') {
     html = `
       <div class="form-row">
@@ -2108,14 +2181,14 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
         </div>
       </div>` : ''}
       <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note" rows="3">${data.note||''}</textarea></div>
-      ${db.operatori && db.operatori.length ? `<div class="form-group"><label class="form-label">👨‍💼 Operatori</label><div id="f-operatori-wrap" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;display:flex;flex-wrap:wrap;gap:8px">${(db.operatori||[]).map(o=>`<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--text);white-space:nowrap"><input type="checkbox" value="${o.id}" ${(data.operatoriIds||[]).includes(o.id)?'checked':''} style="accent-color:var(--accent);cursor:pointer"> ${o.nome} ${o.cognome}</label>`).join('')}</div></div>` : ''}
+      ${db.operatori && db.operatori.length ? `<div class="form-group"><label class="form-label">👨‍💼 Operatori</label><div class="op-select" id="op-sel-persona"></div></div>` : ''}
       <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="savePersona()">💾 ${id?'Salva Modifiche':'Aggiungi'}</button>`;
   }
   else if(tipo==='immobile') {
     const propOpts = db.proprietari.map(p => `<option value="${p.id}" ${data.proprietarioId===p.id?'selected':''}>${p.nome} ${p.cognome}</option>`).join('');
     const acqOpts = '<option value="">-- nessuno --</option>' + db.acquirenti.map(a => `<option value="${a.id}" ${data.acquirenteId===a.id?'selected':''}>${a.nome} ${a.cognome}</option>`).join('');
     // Per immobili: default operatori dal proprietario se non già impostati
-    const immOpIds = data.operatoriIds && data.operatoriIds.length ? data.operatoriIds :
+    immOpIds = data.operatoriIds && data.operatoriIds.length ? data.operatoriIds :
       (data.proprietarioId ? (db.proprietari.find(p=>p.id===data.proprietarioId)||{}).operatoriIds||[] : []);
     html = `
       <div class="form-group"><label class="form-label">Titolo</label><input class="form-control" id="f-titolo" value="${data.titolo||''}"></div>
@@ -2125,27 +2198,24 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
             ${['Appartamento','Villa','Ufficio','Negozio','Terreno'].map(t=>`<option ${data.tipo===t?'selected':''}>${t}</option>`).join('')}
           </select>
         </div>
-        <div class="form-group"><label class="form-label">Stato</label>
-          <select class="form-control" id="f-stato">
-            ${['disponibile','trattativa','venduto'].map(s=>`<option ${data.stato===s?'selected':''}>${s}</option>`).join('')}
+        <div class="form-group"><label class="form-label">Contratto</label>
+          <select class="form-control" id="f-contratto">
+            ${['vendita','locazione','affitto'].map(c=>`<option value="${c}" ${data.contratto===c?'selected':''}>${c.charAt(0).toUpperCase()+c.slice(1)}</option>`).join('')}
           </select>
         </div>
-      </div>
-      <div class="form-group"><label class="form-label">Contratto</label>
-        <select class="form-control" id="f-contratto">
-          ${['vendita','locazione','affitto'].map(c=>`<option value="${c}" ${data.contratto===c?'selected':''}>${c.charAt(0).toUpperCase()+c.slice(1)}</option>`).join('')}
-        </select>
       </div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Tipo Incarico</label>
-          <select class="form-control" id="f-tipo-incarico">
-            <option value="">-- nessuno --</option>
+          <select class="form-control" id="f-tipo-incarico" onchange="onTipoIncaricoChange(this)">
             <option value="incarico" ${data.tipoIncarico==='incarico'?'selected':''}>📋 Incarico</option>
+            <option value="trattativa" ${data.tipoIncarico==='trattativa'?'selected':''}>🤝 Trattativa</option>
             <option value="notizia" ${data.tipoIncarico==='notizia'?'selected':''}>📣 Notizia</option>
             <option value="concorrenza" ${data.tipoIncarico==='concorrenza'?'selected':''}>🔔 Concorrenza</option>
+            <option value="venduto" ${data.tipoIncarico==='venduto'?'selected':''}>✅ Venduto</option>
+            <option value="inattivo" ${data.tipoIncarico==='inattivo'?'selected':''}>📦 Inattivo</option>
           </select>
         </div>
-        <div class="form-group"><label class="form-label">Fine Incarico</label>
+        <div class="form-group"><label class="form-label">${(data.tipoIncarico==='notizia'||data.tipoIncarico==='concorrenza'||data.tipoIncarico==='venduto'||data.tipoIncarico==='inattivo')?'Dal (data selezione)':'Data Incarico'}</label>
           <input type="date" class="form-control" id="f-fine-incarico" value="${data.fineIncarico||''}">
         </div>
       </div>
@@ -2158,7 +2228,7 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
       <div class="form-group"><label class="form-label">Locali</label><input class="form-control" id="f-locali" type="number" value="${data.locali||''}"></div>
       <div class="form-group"><label class="form-label">Proprietario</label><select class="form-control" id="f-proprietario">${propOpts}</select></div>
       <div class="form-group"><label class="form-label">Cliente (opzionale)</label><select class="form-control" id="f-acquirente">${acqOpts}</select></div>
-      ${db.operatori && db.operatori.length ? `<div class="form-group"><label class="form-label">👨‍💼 Operatori</label><div id="f-operatori-wrap" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;display:flex;flex-wrap:wrap;gap:8px">${(db.operatori||[]).map(o=>`<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--text);white-space:nowrap"><input type="checkbox" value="${o.id}" ${(immOpIds).includes(o.id)?'checked':''} style="accent-color:var(--accent);cursor:pointer"> ${o.nome} ${o.cognome}</label>`).join('')}</div></div>` : ''}
+      ${db.operatori && db.operatori.length ? `<div class="form-group"><label class="form-label">👨‍💼 Operatori</label><div class="op-select" id="op-sel-immobile"></div></div>` : ''}
       <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="saveImmobile()">💾 ${id?'Salva Modifiche':'Aggiungi'}</button>`;
   }
   else if(tipo==='attivita') {
@@ -2203,7 +2273,7 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
         </select>
       </div>
       <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note" rows="3"></textarea></div>
-      ${db.operatori && db.operatori.length ? `<div class="form-group"><label class="form-label">👨‍💼 Operatori</label><div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;display:flex;flex-wrap:wrap;gap:8px">${(db.operatori||[]).map(o=>`<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--text);white-space:nowrap"><input type="checkbox" value="${o.id}" style="accent-color:var(--accent);cursor:pointer"> ${o.nome} ${o.cognome}</label>`).join('')}</div></div>` : ''}
+      ${db.operatori && db.operatori.length ? `<div class="form-group"><label class="form-label">👨‍💼 Operatori</label><div class="op-select" id="op-sel-attivita"></div></div>` : ''}
       <div id="gcal-note" style="display:none;background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.3);border-radius:8px;padding:10px;margin-bottom:14px;font-size:12px;color:#60a5fa">
         📅 L'appuntamento verrà salvato e potrai aggiungerlo a Google Calendar dopo
       </div>
@@ -2212,12 +2282,20 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
 
   document.getElementById('modal-body').innerHTML = html;
 
+  // Init operatori multi-select widget
+  if(tipo==='acquirente' || tipo==='proprietario' || tipo==='altro') {
+    if(document.getElementById('op-sel-persona')) buildOpSelect('op-sel-persona', data.operatoriIds||[]);
+  } else if(tipo==='immobile') {
+    if(document.getElementById('op-sel-immobile')) buildOpSelect('op-sel-immobile', immOpIds||[]);
+  }
+
   if(tipo==='attivita') {
     if(prePersonaTipo) document.getElementById('f-persona-tipo').value = prePersonaTipo;
     if(prePersonaId) {
       switchPersoneOpts();
       document.getElementById('f-persona-id').value = prePersonaId;
     } else { switchPersoneOpts(); }
+    if(document.getElementById('op-sel-attivita')) buildOpSelect('op-sel-attivita', []);
   }
 }
 
@@ -2256,6 +2334,127 @@ function getCheckedOperatori() {
   return ids;
 }
 
+// ─── Multi-select operatori widget ───
+function buildOpSelect(containerId, selectedIds = []) {
+  const container = document.getElementById(containerId);
+  if(!container || !db.operatori || !db.operatori.length) return;
+  let selected = [...selectedIds];
+
+  function render() {
+    const tags = selected.map(id => {
+      const op = db.operatori.find(o => o.id === id);
+      return op ? `<span class="op-tag">👨‍💼 ${op.nome} ${op.cognome}<span class="op-tag-x" onclick="event.stopPropagation();opRemove('${containerId}',${id})">×</span></span>` : '';
+    }).join('');
+    const dd = container.querySelector('.op-dropdown');
+    const tagsEl = container.querySelector('.op-tags');
+    tagsEl.innerHTML = tags || `<span class="op-placeholder">Seleziona operatori…</span>`;
+    // Re-append dropdown
+    tagsEl.appendChild ? null : null;
+    if(dd) {
+      dd.querySelectorAll('.op-dropdown-item').forEach(item => {
+        const id = parseInt(item.dataset.id);
+        const cb = item.querySelector('input');
+        const isSel = selected.includes(id);
+        if(cb) cb.checked = isSel;
+        item.classList.toggle('selected', isSel);
+      });
+    }
+    container._selectedIds = selected;
+  }
+
+  container.innerHTML = `
+    <div class="op-tags" onclick="opToggleDropdown('${containerId}')">
+      <span class="op-placeholder">Seleziona operatori…</span>
+    </div>
+    <div class="op-dropdown">
+      ${db.operatori.map(o => `
+        <div class="op-dropdown-item" data-id="${o.id}" onclick="opToggle('${containerId}',${o.id})">
+          <input type="checkbox" onclick="event.stopPropagation();opToggle('${containerId}',${o.id})">
+          ${o.nome} ${o.cognome}
+        </div>`).join('')}
+    </div>`;
+  container._selectedIds = selected;
+  container.opToggle = (id) => {
+    const idx = selected.indexOf(id);
+    if(idx >= 0) selected.splice(idx, 1); else selected.push(id);
+    render();
+  };
+  render();
+}
+
+function opToggle(containerId, id) {
+  const c = document.getElementById(containerId);
+  if(!c) return;
+  const selected = c._selectedIds || [];
+  const idx = selected.indexOf(id);
+  if(idx >= 0) selected.splice(idx, 1); else selected.push(id);
+  c._selectedIds = selected;
+  // Re-render tags
+  const tags = selected.map(sid => {
+    const op = db.operatori.find(o => o.id === sid);
+    return op ? `<span class="op-tag">👨‍💼 ${op.nome} ${op.cognome}<span class="op-tag-x" onclick="event.stopPropagation();opRemove('${containerId}',${sid})">×</span></span>` : '';
+  }).join('');
+  const tagsEl = c.querySelector('.op-tags');
+  const dd = c.querySelector('.op-dropdown');
+  // Save dropdown
+  const ddClone = dd ? dd.outerHTML : '';
+  tagsEl.innerHTML = tags || `<span class="op-placeholder">Seleziona operatori…</span>`;
+  tagsEl.onclick = () => opToggleDropdown(containerId);
+  if(dd) {
+    dd.querySelectorAll('.op-dropdown-item').forEach(item => {
+      const iid = parseInt(item.dataset.id);
+      const cb = item.querySelector('input');
+      const isSel = selected.includes(iid);
+      if(cb) cb.checked = isSel;
+      item.classList.toggle('selected', isSel);
+    });
+  }
+}
+
+function opRemove(containerId, id) {
+  const c = document.getElementById(containerId);
+  if(!c) return;
+  c._selectedIds = (c._selectedIds || []).filter(x => x !== id);
+  opToggle(containerId, id); opToggle(containerId, id); // force re-render without toggle
+  // Actually just re-render:
+  const selected = c._selectedIds;
+  const tags = selected.map(sid => {
+    const op = db.operatori.find(o => o.id === sid);
+    return op ? `<span class="op-tag">👨‍💼 ${op.nome} ${op.cognome}<span class="op-tag-x" onclick="event.stopPropagation();opRemove('${containerId}',${sid})">×</span></span>` : '';
+  }).join('');
+  const tagsEl = c.querySelector('.op-tags');
+  tagsEl.innerHTML = tags || `<span class="op-placeholder">Seleziona operatori…</span>`;
+  tagsEl.onclick = () => opToggleDropdown(containerId);
+  const dd = c.querySelector('.op-dropdown');
+  if(dd) dd.querySelectorAll('.op-dropdown-item').forEach(item => {
+    const iid = parseInt(item.dataset.id);
+    const cb = item.querySelector('input');
+    if(cb) cb.checked = selected.includes(iid);
+    item.classList.toggle('selected', selected.includes(iid));
+  });
+}
+
+function opToggleDropdown(containerId) {
+  const c = document.getElementById(containerId);
+  if(!c) return;
+  const dd = c.querySelector('.op-dropdown');
+  if(!dd) return;
+  const isOpen = dd.classList.contains('open');
+  // Close all others
+  document.querySelectorAll('.op-dropdown.open').forEach(d => d.classList.remove('open'));
+  if(!isOpen) {
+    dd.classList.add('open');
+    setTimeout(() => document.addEventListener('click', function handler(e) {
+      if(!c.contains(e.target)) { dd.classList.remove('open'); document.removeEventListener('click', handler); }
+    }), 0);
+  }
+}
+
+function getOpSelectIds(containerId) {
+  const c = document.getElementById(containerId);
+  return c ? (c._selectedIds || []) : [];
+}
+
 function savePersona() {
   const tipo = currentModal;
   const arr = tipo==='acquirente' ? 'acquirenti' : tipo==='proprietario' ? 'proprietari' : 'altri';
@@ -2274,7 +2473,7 @@ function savePersona() {
     obj.privacy = privEl ? privEl.checked : false;
     obj.antiriciclaggio = antiEl ? antiEl.checked : false;
   }
-  obj.operatoriIds = getCheckedOperatori();
+  obj.operatoriIds = getOpSelectIds('op-sel-persona');
   if(editingId) { db[arr] = db[arr].map(p => p.id===editingId ? {...p,...obj} : p); }
   else { obj.id = nextId(db[arr]); db[arr].push(obj); }
   saveDb();
@@ -2285,21 +2484,23 @@ function savePersona() {
 
 function saveImmobile() {
   const obj = {
-    titolo: g('f-titolo'), tipo: g('f-tipo'), stato: g('f-stato'),
+    titolo: g('f-titolo'), tipo: g('f-tipo'),
     contratto: g('f-contratto'),
-    tipoIncarico: g('f-tipo-incarico'),
+    tipoIncarico: g('f-tipo-incarico') || 'incarico',
     fineIncarico: g('f-fine-incarico'),
     indirizzo: g('f-indirizzo'), citta: g('f-citta'), prezzo: g('f-prezzo'),
     mq: parseInt(g('f-mq'))||0, locali: parseInt(g('f-locali'))||0,
     proprietarioId: parseInt(g('f-proprietario'))||null,
     acquirenteId: parseInt(g('f-acquirente'))||null,
-    operatoriIds: getCheckedOperatori(),
+    operatoriIds: getOpSelectIds('op-sel-immobile'),
   };
+
   if(editingId) { db.immobili = db.immobili.map(i => i.id===editingId ? {...i,...obj} : i); }
   else { obj.id = nextId(db.immobili); db.immobili.push(obj); }
   saveDb();
   document.getElementById('modal-overlay').classList.remove('open');
-  renderImmobili();
+  if(isInattivo(obj.tipoIncarico)) { renderInattivi(); showPage('inattivi'); }
+  else { renderImmobili(); showPage('immobili'); }
   toast(editingId ? 'Modifiche salvate' : 'Immobile aggiunto!');
 }
 
@@ -2337,7 +2538,7 @@ function saveAttivita() {
     durata: g('f-durata'),
     oggetto: g('f-oggetto'),
     luogo: g('f-luogo'),
-    operatoriIds: getCheckedOperatori(),
+    operatoriIds: getOpSelectIds('op-sel-attivita'),
   };
   if(editingId) {
     db.attivita = db.attivita.map(a => a.id===editingId ? {...a,...obj} : a);
@@ -2478,7 +2679,7 @@ function pdfPersona(tipo, id) {
       doc.autoTable({
         startY: y, margin: {left:14, right:14},
         head: [['Titolo', 'Indirizzo', 'Prezzo', 'Stato', 'Contratto']],
-        body: immobili.map(i => [i.titolo, `${i.indirizzo}, ${i.citta}`, `€${i.prezzo}`, i.stato, i.contratto||'']),
+        body: immobili.map(i => [i.titolo, `${i.indirizzo}, ${i.citta}`, `€${i.prezzo}`, i.contratto||'', incaricoLabel(i.tipoIncarico||'')]),
         styles: { fontSize: 8, cellPadding: 3 },
         headStyles: { fillColor: [30,30,46], textColor: [200,169,110], fontStyle:'bold' },
         alternateRowStyles: { fillColor: [245,245,250] },
@@ -2509,7 +2710,6 @@ function pdfImmobile(id) {
   y = pdfRow(doc, 'Prezzo', `€ ${i.prezzo}`, y, true);
   y = pdfRow(doc, 'Superficie', `${i.mq} mq`, y, false);
   y = pdfRow(doc, 'Locali', i.locali, y, true);
-  y = pdfRow(doc, 'Stato', i.stato, y, false);
   if(i.driveUrl) y = pdfRow(doc, 'Cartella Drive', i.driveUrl, y, true);
   y += 4;
 
@@ -2645,7 +2845,7 @@ CLIENT_ID = localStorage.getItem('gcal_client_id');
 GCAL_EMAIL = localStorage.getItem('gcal_email');
 
 checkGCalCallback();
-renderDashboard();
+try { renderDashboard(); } catch(e) { console.warn('Dashboard init error:', e); }
 if(CLIENT_ID) {
   const inp = document.getElementById('client-id-input');
   if(inp) inp.value = CLIENT_ID;
