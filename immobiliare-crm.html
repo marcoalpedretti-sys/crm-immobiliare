@@ -3408,7 +3408,6 @@ function dbDeleteRecord(tableKey, id) {
     db.trattative = (db.trattative||[]).filter(t => immIds.includes(t.immobileId));
   }
   if(tableKey === 'vendutiClienti') {
-    // L'immobile venduto/locato non ha più un record vendutiClienti — riportalo a inattivo
     const linkedImmIds = (db.vendutiClienti||[]).map(v => v.immobileId);
     db.immobili = db.immobili.map(i => {
       if((i.tipoIncarico === 'venduto' || i.tipoIncarico === 'locato') && !linkedImmIds.includes(i.id)) {
