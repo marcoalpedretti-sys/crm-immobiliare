@@ -704,6 +704,32 @@ function saveDb() {
 function loadDb() {
   // Carica da localStorage come dati iniziali (poi Firestore sovrascrive in real-time)
   try { const s = localStorage.getItem('immobilia_db'); if(s) db = JSON.parse(s); } catch(e){}
+  migrateDb();
+}
+
+function migrateDb() {
+  // Assicura che tutti i campi esistano (compatibilità con versioni precedenti)
+  if(!db.operatori) db.operatori = [];
+  if(!db.trattative) db.trattative = [];
+  if(!db.vendutiClienti) db.vendutiClienti = [];
+  if(!db.acquirenti) db.acquirenti = [];
+  if(!db.proprietari) db.proprietari = [];
+  if(!db.altri) db.altri = [];
+  if(!db.richieste) db.richieste = [];
+  if(!db.immobili) db.immobili = [];
+  if(!db.attivita) db.attivita = [];
+  // Migra trattativeClienti → trattative (se presenti dati vecchi)
+  if(db.trattativeClienti && db.trattativeClienti.length && !db.trattative.length) {
+    db.trattative = db.trattativeClienti.map((t, i) => ({
+      id: i + 1,
+      immobileId: t.immobileId,
+      clienteId: t.clienteId,
+      data: t.data || '',
+      note: '',
+      stato: 'aperta'
+    }));
+    delete db.trattativeClienti;
+  }
 }
 loadDb();
 
@@ -715,12 +741,16 @@ window._startFirebaseSync = function() {
     if(snap.exists()) {
       const remoteDb = snap.data();
       // Unisci i campi assicurandosi che tutti esistano
-      db.acquirenti = remoteDb.acquirenti || db.acquirenti || [];
-      db.proprietari = remoteDb.proprietari || db.proprietari || [];
-      db.altri = remoteDb.altri || db.altri || [];
-      db.richieste = remoteDb.richieste || db.richieste || [];
-      db.immobili = remoteDb.immobili || db.immobili || [];
-      db.attivita = remoteDb.attivita || db.attivita || [];
+      db.acquirenti    = remoteDb.acquirenti    || db.acquirenti    || [];
+      db.proprietari   = remoteDb.proprietari   || db.proprietari   || [];
+      db.altri         = remoteDb.altri         || db.altri         || [];
+      db.richieste     = remoteDb.richieste     || db.richieste     || [];
+      db.immobili      = remoteDb.immobili      || db.immobili      || [];
+      db.attivita      = remoteDb.attivita      || db.attivita      || [];
+      db.operatori     = remoteDb.operatori     || db.operatori     || [];
+      db.trattative    = remoteDb.trattative    || db.trattative    || [];
+      db.vendutiClienti= remoteDb.vendutiClienti|| db.vendutiClienti|| [];
+      migrateDb();
       // Salva in localStorage come backup
       try { localStorage.setItem('immobilia_db', JSON.stringify(db)); } catch(e){}
       // Aggiorna UI
@@ -1894,13 +1924,12 @@ function renderTrattativeVenduti(tipo) {
     }).join('');
 
   } else {
-    // Trattative: tutte le trattative aperte, raggruppate per immobile
-    const trattAperte = db.trattative.filter(t => t.stato !== 'venduto');
-    // Prendi tutti gli immobili coinvolti (distinti)
-    const immIds = [...new Set(trattAperte.map(t => t.immobileId))];
-    if(countEl) countEl.textContent = `${trattAperte.length} trattative su ${immIds.length} immobili`;
-    if(!trattAperte.length) {
-      listEl.innerHTML = `<div style="color:var(--muted);font-size:14px;padding:20px">Nessuna trattativa aperta.<br>Clicca "🤝 Nuova Trattativa" su un immobile per iniziare.</div>`;
+    // Tutte le trattative (anche venduto), raggruppate per immobile
+    const immIds = [...new Set(db.trattative.map(t => t.immobileId))];
+    const trattAperte = db.trattative.filter(t => t.stato === 'aperta').length;
+    if(countEl) countEl.textContent = `${trattAperte} trattative aperte su ${immIds.length} immobili`;
+    if(!immIds.length) {
+      listEl.innerHTML = `<div style="color:var(--muted);font-size:14px;padding:20px">Nessuna trattativa.<br>Clicca "🤝 Nuova Trattativa" su un immobile per iniziare.</div>`;
       return;
     }
     // Raggruppa per immobile
@@ -1923,7 +1952,10 @@ function renderTrattativeVenduti(tipo) {
             </div>
             ${prop ? `<div style="margin-top:6px;font-size:12px;color:var(--muted)">🏠 Proprietario: <strong>${prop.nome} ${prop.cognome}</strong>${prop.telefono?` · <a href="tel:${prop.telefono}" style="color:var(--muted);text-decoration:none">📞 ${prop.telefono}</a>`:''}</div>` : ''}
           </div>
-          <button onclick="nuovaTrattativa(${immId})" style="background:rgba(251,146,60,0.15);border:1px solid rgba(251,146,60,0.4);color:#fb923c;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;flex-shrink:0">+ Trattativa</button>
+          ${hasVenduto
+            ? `<span style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.4);color:#34d399;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600">✅ Venduto</span>`
+            : `<button onclick="nuovaTrattativa(${immId})" style="background:rgba(251,146,60,0.15);border:1px solid rgba(251,146,60,0.4);color:#fb923c;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;flex-shrink:0">+ Trattativa</button>`
+          }
         </div>
         <!-- Trattative -->
         <div style="display:flex;flex-direction:column;gap:8px">
@@ -1945,10 +1977,10 @@ function renderTrattativeVenduti(tipo) {
                 </div>
                 <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
                   ${isVend ? badge('✅ Venduto','#34d399') : isChiusa ? badge('🔒 Trattativa chiusa','#6b7280') : ''}
-                  ${!isChiusa && !isVend ? `<button onclick="modificaTrattativa(${t.id})" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:10px;font-family:'DM Sans',sans-serif">✏️</button>` : ''}
-                  ${!isVend ? `<button onclick="trattativaVenduto(${t.id})" style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.4);color:#34d399;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:10px;font-family:'DM Sans',sans-serif">✅ Venduto</button>` : ''}
-                  ${!isChiusa && !isVend ? `<button onclick="chiudiTrattativa(${t.id})" style="background:none;border:1px solid var(--border);color:#6b7280;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:10px;font-family:'DM Sans',sans-serif">🔒 Chiudi</button>` : ''}
-                  <button onclick="eliminaTrattativa(${t.id})" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:14px;padding:2px 6px">×</button>
+                  ${!hasVenduto && !isChiusa && !isVend ? `<button onclick="modificaTrattativa(${t.id})" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:10px;font-family:'DM Sans',sans-serif">✏️</button>` : ''}
+                  ${!hasVenduto && !isVend ? `<button onclick="trattativaVenduto(${t.id})" style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.4);color:#34d399;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:10px;font-family:'DM Sans',sans-serif">✅ Venduto</button>` : ''}
+                  ${!hasVenduto && !isChiusa && !isVend ? `<button onclick="chiudiTrattativa(${t.id})" style="background:none;border:1px solid var(--border);color:#6b7280;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:10px;font-family:'DM Sans',sans-serif">🔒 Chiudi</button>` : ''}
+                  ${!hasVenduto ? `<button onclick="eliminaTrattativa(${t.id})" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:14px;padding:2px 6px">×</button>` : ''}
                 </div>
               </div>
             </div>`;
@@ -1961,10 +1993,14 @@ function renderTrattativeVenduti(tipo) {
 
 function cardIncrocio(imm, prop, cliente, link, tipo) {
   const accentCol = tipo === 'venduto' ? '#34d399' : '#fb923c';
-  return `<div class="card" style="border-left:3px solid ${accentCol};margin-bottom:16px">
+  const isReadOnly = tipo === 'venduto';
+  return `<div class="card" style="border-left:3px solid ${accentCol};margin-bottom:16px${isReadOnly?';opacity:0.9':''}">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px">
       <div style="flex:1">
-        <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:600;margin-bottom:4px">🏢 ${imm.titolo}</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+          <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:600">🏢 ${imm.titolo}</div>
+          ${isReadOnly ? badge('✅ Venduto','#34d399') : ''}
+        </div>
         <div style="color:var(--muted);font-size:12px">📍 ${imm.indirizzo||''}, ${imm.citta||''}</div>
         <div style="display:flex;gap:12px;margin-top:6px;flex-wrap:wrap;align-items:center">
           <span style="color:var(--accent);font-size:14px;font-weight:700">€${imm.prezzo}</span>
@@ -1972,7 +2008,6 @@ function cardIncrocio(imm, prop, cliente, link, tipo) {
           ${link && link.data ? `<span style="color:var(--muted);font-size:12px">📅 ${link.data}</span>` : ''}
         </div>
       </div>
-      <button onclick="openModal('immobile',${imm.id})" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11px;font-family:'DM Sans',sans-serif;flex-shrink:0">✏️</button>
     </div>
     <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;background:var(--bg);border-radius:10px;padding:12px">
       <div style="text-align:center">
@@ -1982,9 +2017,9 @@ function cardIncrocio(imm, prop, cliente, link, tipo) {
       <div style="text-align:center;font-size:20px;color:${accentCol}">⇄</div>
       <div style="text-align:center">
         <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:6px">Cliente</div>
-        ${cliente ? `<div style="font-weight:600;font-size:13px">👥 ${cliente.nome} ${cliente.cognome}</div>${cliente.telefono?`<a href="tel:${cliente.telefono}" style="color:var(--muted);font-size:11px;text-decoration:none">📞 ${cliente.telefono}</a>`:''}
-          <br><button onclick="apriSelClienteModal(${imm.id},'${tipo}')" style="margin-top:6px;background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:10px;font-family:'DM Sans',sans-serif">↩ Cambia</button>`
-          : `<button onclick="apriSelClienteModal(${imm.id},'${tipo}')" style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.4);color:#34d399;border-radius:8px;padding:8px 14px;cursor:pointer;font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif">+ Associa Cliente</button>`}
+        ${cliente
+          ? `<div style="font-weight:600;font-size:13px">👥 ${cliente.nome} ${cliente.cognome}</div>${cliente.telefono?`<a href="tel:${cliente.telefono}" style="color:var(--muted);font-size:11px;text-decoration:none">📞 ${cliente.telefono}</a>`:''}`
+          : `<span style="color:var(--muted);font-size:13px">—</span>`}
       </div>
     </div>
   </div>`;
@@ -2041,11 +2076,32 @@ function salvaTrattativa() {
   const clienteId = parseInt(document.getElementById('f-sel-cliente').value) || null;
   const data = document.getElementById('f-sel-data').value;
   const note = document.getElementById('f-sel-note') ? document.getElementById('f-sel-note').value : '';
+
+  if(clienteId && !_selClienteTrattId) {
+    // Controlla duplicato: stesso cliente sullo stesso immobile (escludi record in modifica)
+    const dup = db.trattative.find(t =>
+      t.immobileId === _selClienteImmId &&
+      t.clienteId === clienteId &&
+      t.id !== _selClienteTrattId
+    );
+    if(dup) {
+      toast('⚠️ Questo cliente ha già una trattativa su questo immobile!', 'orange');
+      return;
+    }
+  }
+
   if(_selClienteTrattId) {
-    // Modifica esistente
+    // Modifica esistente — controlla che il nuovo cliente non sia già presente in un'altra trattativa
+    if(clienteId) {
+      const dup = db.trattative.find(t =>
+        t.immobileId === _selClienteImmId &&
+        t.clienteId === clienteId &&
+        t.id !== _selClienteTrattId
+      );
+      if(dup) { toast('⚠️ Questo cliente ha già una trattativa su questo immobile!', 'orange'); return; }
+    }
     db.trattative = db.trattative.map(t => t.id === _selClienteTrattId ? {...t, clienteId, data, note} : t);
   } else {
-    // Nuova trattativa
     db.trattative.push({ id: nextId(db.trattative), immobileId: _selClienteImmId, clienteId, data, note, stato: 'aperta' });
   }
   saveDb();
@@ -2066,18 +2122,25 @@ function trattativaVenduto(trattId) {
   if(!db.vendutiClienti) db.vendutiClienti = [];
   const t = db.trattative.find(x => x.id === trattId);
   if(!t) return;
-  // Segna questa come venduto
+  const immOriginale = db.immobili.find(i => i.id === t.immobileId);
+  if(!immOriginale) return;
+
+  // Segna la trattativa come venduto
   db.trattative = db.trattative.map(x => x.id === trattId ? {...x, stato: 'venduto'} : x);
   // Chiudi tutte le altre trattative dello stesso immobile
   db.trattative = db.trattative.map(x => (x.immobileId === t.immobileId && x.id !== trattId && x.stato === 'aperta') ? {...x, stato: 'chiusa'} : x);
-  // Sposta immobile in venduti
+  // Segna l'immobile originale come venduto (read-only in Venduti)
   db.immobili = db.immobili.map(i => i.id === t.immobileId ? {...i, tipoIncarico: 'venduto'} : i);
+  // Crea una copia modificabile in Inattivi
+  const copia = {...immOriginale, id: nextId(db.immobili), tipoIncarico: 'inattivo', fineIncarico: new Date().toISOString().slice(0,10)};
+  db.immobili.push(copia);
   // Aggiungi a vendutiClienti
   db.vendutiClienti = db.vendutiClienti.filter(v => v.immobileId !== t.immobileId);
   db.vendutiClienti.push({ id: nextId(db.vendutiClienti), immobileId: t.immobileId, clienteId: t.clienteId, data: t.data || new Date().toISOString().slice(0,10) });
   saveDb();
   renderTrattativeVenduti('trattativa');
-  toast('✅ Venduto! Immobile spostato in Venduti e altre trattative chiuse.');
+  renderInattivi();
+  toast('✅ Venduto! Copia modificabile aggiunta in Inattivi.');
 }
 
 function eliminaTrattativa(trattId) {
@@ -2126,10 +2189,16 @@ function rimuoviSelCliente() {
 }
 
 function spostaInVenduto(id) {
+  const immOriginale = db.immobili.find(i => i.id === id);
+  if(!immOriginale) return;
+  // Segna originale come venduto (read-only)
   db.immobili = db.immobili.map(i => i.id===id ? {...i, tipoIncarico:'venduto'} : i);
+  // Crea copia modificabile in Inattivi
+  const copia = {...immOriginale, id: nextId(db.immobili), tipoIncarico: 'inattivo', fineIncarico: new Date().toISOString().slice(0,10)};
+  db.immobili.push(copia);
   saveDb(); renderInattivi(); renderTrattativeVenduti('venduto'); showPage('venduti');
   setTimeout(() => apriSelClienteModal(id, 'venduto'), 300);
-  toast('✅ Immobile spostato in Venduti!');
+  toast('✅ Venduto! Copia modificabile aggiunta in Inattivi.');
 }
 
 
@@ -2210,16 +2279,6 @@ function riattivaImmobile(id) {
   db.immobili = db.immobili.map(i => i.id===id ? {...i, tipoIncarico:'incarico', fineIncarico:''} : i);
   saveDb(); renderInattivi(); renderImmobili();
   toast('✅ Immobile riattivato come Incarico!');
-}
-
-function spostaInVenduto(id) {
-  db.immobili = db.immobili.map(i => i.id===id ? {...i, tipoIncarico:'venduto'} : i);
-  saveDb();
-  renderInattivi();
-  renderTrattativeVenduti('venduto');
-  showPage('venduti');
-  setTimeout(() => apriSelClienteModal(id, 'venduto'), 300);
-  toast('✅ Immobile spostato in Venduti!');
 }
 
 function onTipoIncaricoChange(sel) {
@@ -2803,8 +2862,24 @@ function saveImmobile() {
   };
 
   let savedId = editingId;
-  if(editingId) { db.immobili = db.immobili.map(i => i.id===editingId ? {...i,...obj} : i); }
-  else { obj.id = nextId(db.immobili); db.immobili.push(obj); savedId = obj.id; }
+  if(editingId) {
+    const prevTipo = (db.immobili.find(i => i.id===editingId)||{}).tipoIncarico;
+    db.immobili = db.immobili.map(i => i.id===editingId ? {...i,...obj} : i);
+    // Se il tipo è cambiato in venduto, crea copia in Inattivi
+    if(obj.tipoIncarico === 'venduto' && prevTipo !== 'venduto') {
+      const immOriginale = db.immobili.find(i => i.id===editingId);
+      if(immOriginale) {
+        const copia = {...immOriginale, id: nextId(db.immobili), tipoIncarico:'inattivo', fineIncarico: new Date().toISOString().slice(0,10)};
+        db.immobili.push(copia);
+      }
+    }
+  } else {
+    obj.id = nextId(db.immobili); db.immobili.push(obj); savedId = obj.id;
+    if(obj.tipoIncarico === 'venduto') {
+      const copia = {...obj, id: nextId(db.immobili), tipoIncarico:'inattivo', fineIncarico: new Date().toISOString().slice(0,10)};
+      db.immobili.push(copia);
+    }
+  }
   saveDb();
   document.getElementById('modal-overlay').classList.remove('open');
   const tipo = obj.tipoIncarico;
