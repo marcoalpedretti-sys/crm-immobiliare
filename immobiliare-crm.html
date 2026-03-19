@@ -3364,8 +3364,26 @@ function renderDatabase(table) {
 function dbDeleteRecord(tableKey, id) {
   if(!confirm('Eliminare questo record?')) return;
   db[tableKey] = (db[tableKey]||[]).filter(r => r.id !== id);
+
+  // Pulizia record orfani collegati
+  if(tableKey === 'immobili') {
+    const immIds = db.immobili.map(i => i.id);
+    db.vendutiClienti = (db.vendutiClienti||[]).filter(v => immIds.includes(v.immobileId));
+    db.trattative = (db.trattative||[]).filter(t => immIds.includes(t.immobileId));
+  }
+  if(tableKey === 'acquirenti') {
+    const acqIds = db.acquirenti.map(a => a.id);
+    db.vendutiClienti = (db.vendutiClienti||[]).filter(v => acqIds.includes(v.clienteId));
+    db.trattative = (db.trattative||[]).filter(t => !t.clienteId || acqIds.includes(t.clienteId));
+    db.attivita = (db.attivita||[]).filter(a => a.personaTipo !== 'acquirente' || acqIds.includes(a.personaId));
+  }
+  if(tableKey === 'proprietari') {
+    const propIds = db.proprietari.map(p => p.id);
+    db.attivita = (db.attivita||[]).filter(a => a.personaTipo !== 'proprietario' || propIds.includes(a.personaId));
+  }
+
   saveDb();
-  // Re-render tutte le pagine che potrebbero mostrare questo record
+  // Re-render tutte le pagine
   try { renderDashboard(); } catch(e){}
   try { renderPersone('acquirenti'); } catch(e){}
   try { renderPersone('proprietari'); } catch(e){}
