@@ -1039,7 +1039,7 @@ function incaricoColor(t) {
 function incaricoLabel(t) {
   return t==='incarico'?'📋 Incarico':t==='trattativa'?'🤝 Trattativa':t==='notizia'?'📣 Notizia':t==='venduto'?'✅ Venduto':t==='locato'?'🔑 Locato':t==='inattivo'?'📦 Inattivo':'🔔 Concorrenza';
 }
-function isInattivo(t) { return t==='inattivo'||t==='notizia'||t==='concorrenza'||t==='venduto'||t==='locato'; }
+function isInattivo(t) { return t==='inattivo'||t==='notizia'||t==='concorrenza'; }
 function isIncaricoScaduto(data) { return data && fmtDate(new Date()) > data; }
 function nextId(arr) { return arr.length ? Math.max(...arr.map(x=>x.id)) + 1 : 1; }
 function toast(msg, type='green') {
@@ -1058,14 +1058,14 @@ function renderDashboard() {
   if(!document.getElementById('stats-grid')) return;
   const incrociCount = computeIncroci().reduce((s,r) => s + r.matches.length, 0);
   const stats = [
-    { l:'Clienti',    v:db.acquirenti.length,                                      c:'#60a5fa', i:'👥', page:'acquirenti' },
-    { l:'Proprietari',   v:db.proprietari.length,                                     c:'#4ade80', i:'🏠', page:'proprietari' },
-    { l:'Immobili',      v:db.immobili.length,                                        c:'#c8a96e', i:'🏢', page:'immobili' },
-    { l:'In Trattativa', v:db.immobili.filter(i=>i.tipoIncarico==='trattativa').length,      c:'#fb923c', i:'🤝', page:'immobili' },
-    { l:'Richieste',     v:(db.richieste||[]).length,                                 c:'#a78bfa', i:'🔍', page:'richieste' },
-    { l:'Incroci',       v:incrociCount,                                              c:'#f472b6', i:'🔀', page:'incroci' },
-    { l:'Totale Attività',v:db.attivita.length,                                       c:'#60a5fa', i:'📋', page:'attivita' },
-    { l:'Calendario',    v:'',                                                        c:'#34d399', i:'📅', page:'calendario' },
+    { l:'Clienti',        v:db.acquirenti.length,                                                           c:'#60a5fa', i:'👥', page:'acquirenti' },
+    { l:'Proprietari',    v:db.proprietari.length,                                                          c:'#4ade80', i:'🏠', page:'proprietari' },
+    { l:'Immobili',       v:db.immobili.filter(i=>!isInattivo(i.tipoIncarico)&&i.tipoIncarico!=='venduto'&&i.tipoIncarico!=='locato').length, c:'#c8a96e', i:'🏢', page:'immobili' },
+    { l:'Trattative',     v:(db.trattative||[]).filter(t=>t.stato==='aperta').length,                       c:'#fb923c', i:'🤝', page:'trattative' },
+    { l:'Venduti',        v:db.immobili.filter(i=>i.tipoIncarico==='venduto').length,                       c:'#34d399', i:'✅', page:'venduti' },
+    { l:'Locati',         v:db.immobili.filter(i=>i.tipoIncarico==='locato').length,                        c:'#a78bfa', i:'🔑', page:'locati' },
+    { l:'Richieste',      v:(db.richieste||[]).length,                                                      c:'#f472b6', i:'🔍', page:'richieste' },
+    { l:'Totale Attività',v:db.attivita.length,                                                             c:'#60a5fa', i:'📋', page:'attivita' },
   ];
   document.getElementById('stats-grid').innerHTML = stats.map(s => `
     <div class="stat-card stat-card-link" onclick="showPage('${s.page}')" title="Vai a ${s.l}">
@@ -2155,6 +2155,18 @@ function chiudiTrattativa(trattId) {
   saveDb(); renderTrattativeVenduti('trattativa'); toast('🔒 Trattativa chiusa');
 }
 
+function creaCopiaInInattivi(immOriginale) {
+  // Controlla se esiste già una copia con stesso titolo+indirizzo in inattivi
+  const giaPresente = db.immobili.some(i =>
+    i.tipoIncarico === 'inattivo' &&
+    i.titolo === immOriginale.titolo &&
+    i.indirizzo === immOriginale.indirizzo &&
+    i.id !== immOriginale.id
+  );
+  if(giaPresente) return;
+  creaCopiaInInattivi(immOriginale);
+}
+
 function trattativaVenduto(trattId, tipoFinale) {
   if(!tipoFinale) tipoFinale = 'venduto';
   if(!db.trattative) return;
@@ -2171,8 +2183,7 @@ function trattativaVenduto(trattId, tipoFinale) {
   // Segna l'immobile originale come venduto/locato (read-only)
   db.immobili = db.immobili.map(i => i.id === t.immobileId ? {...i, tipoIncarico: tipoFinale} : i);
   // Crea copia modificabile in Inattivi
-  const copia = {...immOriginale, id: nextId(db.immobili), tipoIncarico: 'inattivo', fineIncarico: new Date().toISOString().slice(0,10)};
-  db.immobili.push(copia);
+  creaCopiaInInattivi(immOriginale);
   // Aggiungi a vendutiClienti
   db.vendutiClienti = db.vendutiClienti.filter(v => v.immobileId !== t.immobileId);
   db.vendutiClienti.push({ id: nextId(db.vendutiClienti), immobileId: t.immobileId, clienteId: t.clienteId, data: t.data || new Date().toISOString().slice(0,10), tipo: tipoFinale });
@@ -2184,7 +2195,15 @@ function trattativaVenduto(trattId, tipoFinale) {
 }
 
 function eliminaTrattativa(trattId) {
-  db.trattative = (db.trattative||[]).filter(t => t.id !== trattId);
+  const t = (db.trattative||[]).find(x => x.id === trattId);
+  db.trattative = (db.trattative||[]).filter(x => x.id !== trattId);
+  // Se l'immobile non ha più trattative attive e aveva tipoIncarico 'trattativa', riporta a 'incarico'
+  if(t) {
+    const rimaste = db.trattative.filter(x => x.immobileId === t.immobileId);
+    if(!rimaste.length) {
+      db.immobili = db.immobili.map(i => i.id === t.immobileId && i.tipoIncarico === 'trattativa' ? {...i, tipoIncarico: 'incarico'} : i);
+    }
+  }
   saveDb(); renderTrattativeVenduti('trattativa'); toast('Trattativa eliminata');
 }
 
@@ -2232,8 +2251,7 @@ function spostaInVenduto(id) {
   const immOriginale = db.immobili.find(i => i.id === id);
   if(!immOriginale) return;
   db.immobili = db.immobili.map(i => i.id===id ? {...i, tipoIncarico:'venduto'} : i);
-  const copia = {...immOriginale, id: nextId(db.immobili), tipoIncarico: 'inattivo', fineIncarico: new Date().toISOString().slice(0,10)};
-  db.immobili.push(copia);
+  creaCopiaInInattivi(immOriginale);
   saveDb(); renderInattivi(); renderTrattativeVenduti('venduto'); showPage('venduti');
   setTimeout(() => apriSelClienteModal(id, 'venduto'), 300);
   toast('✅ Venduto! Copia modificabile aggiunta in Inattivi.');
@@ -2243,8 +2261,7 @@ function spostaInLocato(id) {
   const immOriginale = db.immobili.find(i => i.id === id);
   if(!immOriginale) return;
   db.immobili = db.immobili.map(i => i.id===id ? {...i, tipoIncarico:'locato'} : i);
-  const copia = {...immOriginale, id: nextId(db.immobili), tipoIncarico: 'inattivo', fineIncarico: new Date().toISOString().slice(0,10)};
-  db.immobili.push(copia);
+  creaCopiaInInattivi(immOriginale);
   saveDb(); renderInattivi(); renderTrattativeVenduti('locato'); showPage('locati');
   setTimeout(() => apriSelClienteModal(id, 'locato'), 300);
   toast('🔑 Locato! Copia modificabile aggiunta in Inattivi.');
@@ -2259,8 +2276,9 @@ function renderImmobili() {
   const attivi = db.immobili.filter(i => !isInattivo(i.tipoIncarico) && i.tipoIncarico !== 'venduto' && i.tipoIncarico !== 'locato');
   const inattivi = db.immobili.filter(i => i.tipoIncarico==='inattivo'||i.tipoIncarico==='notizia'||i.tipoIncarico==='concorrenza');
   const vend = db.immobili.filter(i => i.tipoIncarico === 'venduto');
+  const loc = db.immobili.filter(i => i.tipoIncarico === 'locato');
   const trattAperte = (db.trattative||[]).filter(t => t.stato === 'aperta').length;
-  countEl.textContent = `${attivi.length} immobili attivi${trattAperte ? ' · ' + trattAperte + ' trattative' : ''}${vend.length ? ' · ' + vend.length + ' venduti' : ''}${inattivi.length ? ' · ' + inattivi.length + ' inattivi' : ''}`;
+  countEl.textContent = `${attivi.length} immobili attivi${trattAperte ? ' · ' + trattAperte + ' trattative' : ''}${vend.length ? ' · ' + vend.length + ' venduti' : ''}${loc.length ? ' · ' + loc.length + ' locati' : ''}${inattivi.length ? ' · ' + inattivi.length + ' inattivi' : ''}`;
   listEl.innerHTML = attivi.map(i => immobileCard(i)).join('') || '<span style="color:var(--muted)">Nessun immobile attivo</span>';
 }
 
@@ -2920,15 +2938,13 @@ function saveImmobile() {
     if((obj.tipoIncarico === 'venduto' || obj.tipoIncarico === 'locato') && prevTipo !== obj.tipoIncarico) {
       const immOriginale = db.immobili.find(i => i.id===editingId);
       if(immOriginale) {
-        const copia = {...immOriginale, id: nextId(db.immobili), tipoIncarico:'inattivo', fineIncarico: new Date().toISOString().slice(0,10)};
-        db.immobili.push(copia);
+        creaCopiaInInattivi(immOriginale);
       }
     }
   } else {
     obj.id = nextId(db.immobili); db.immobili.push(obj); savedId = obj.id;
     if(obj.tipoIncarico === 'venduto' || obj.tipoIncarico === 'locato') {
-      const copia = {...obj, id: nextId(db.immobili), tipoIncarico:'inattivo', fineIncarico: new Date().toISOString().slice(0,10)};
-      db.immobili.push(copia);
+      creaCopiaInInattivi(obj);
     }
   }
   saveDb();
@@ -3307,7 +3323,7 @@ const DB_TABLES = [
   { key: 'richieste',       label: '🔍 Richieste',        icon: '🔍' },
   { key: 'attivita',        label: '📋 Attività',         icon: '📋' },
   { key: 'trattative',      label: '🤝 Trattative',      icon: '🤝' },
-  { key: 'vendutiClienti',  label: '✅ Venduti',          icon: '✅' },
+  { key: 'vendutiClienti',  label: '✅ Venduti/Locati',   icon: '✅' },
 ];
 
 function renderDatabase(table) {
