@@ -1184,13 +1184,15 @@ function renderDashboard() {
     </div>`;
   }).join('') || '<span style="color:var(--muted);font-size:13px">Nessuna attività</span>';
 
-  document.getElementById('dash-immobili').innerHTML = db.immobili.map(i => `
+  document.getElementById('dash-immobili').innerHTML = db.immobili
+    .filter(i => !isInattivo(i.tipoIncarico) && i.tipoIncarico !== 'venduto' && i.tipoIncarico !== 'locato')
+    .slice(0, 8).map(i => `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div>
         <div style="font-size:13px">${i.titolo}</div>
         <div style="color:var(--muted);font-size:11px">${i.citta} • €${i.prezzo}</div>
       </div>
-      ${badge(i.stato, statoColor(i.stato))}
+      ${i.tipoIncarico ? badge(incaricoLabel(i.tipoIncarico), incaricoColor(i.tipoIncarico)) : ''}
     </div>`).join('') || '<span style="color:var(--muted);font-size:13px">Nessun immobile</span>';
 
   // Widget incroci in dashboard — mostra i primi 3 abbinamenti migliori
@@ -1213,7 +1215,7 @@ function renderDashboard() {
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">${criteri.map(c=>`<span style="font-size:10px;color:#f472b6;background:rgba(244,114,182,0.1);border-radius:4px;padding:1px 6px">${c}</span>`).join('')}</div>
       </div>
       <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;margin-left:12px">
-        ${badge(imm.stato, statoColor(imm.stato))}
+        ${imm.tipoIncarico ? badge(incaricoLabel(imm.tipoIncarico), incaricoColor(imm.tipoIncarico)) : ''}
         <span style="color:var(--accent);font-size:12px;font-weight:700">€${imm.prezzo}</span>
       </div>
     </div>`).join('');
