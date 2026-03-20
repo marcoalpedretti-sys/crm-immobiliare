@@ -428,8 +428,20 @@ window._firebaseReady = true;
         <button class="btn btn-primary" onclick="openModal('acquirente')">+ Nuovo Cliente</button>
       </div>
     </div>
-    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-      <input id="search-acquirenti" class="form-control" placeholder="🔍  Nome, telefono, città..." oninput="renderPersone(db.acquirenti,'acquirenti')" style="max-width:360px">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+      <div class="form-group" style="margin:0;flex:1;min-width:160px">
+        <label class="form-label">Nome / Cognome</label>
+        <input class="form-control" id="search-acquirenti" placeholder="es. Rossi" oninput="renderPersone('acquirenti')">
+      </div>
+      <div class="form-group" style="margin:0;flex:1;min-width:140px">
+        <label class="form-label">Telefono</label>
+        <input class="form-control" id="search-acq-tel" placeholder="es. 333..." oninput="renderPersone('acquirenti')">
+      </div>
+      <div class="form-group" style="margin:0;flex:1;min-width:140px">
+        <label class="form-label">Città</label>
+        <input class="form-control" id="search-acq-citta" placeholder="es. Milano" oninput="renderPersone('acquirenti')">
+      </div>
+      <button class="btn-sm" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:8px 14px;cursor:pointer;font-family:'DM Sans',sans-serif" onclick="resetFiltri('acquirenti')">✕ Reset</button>
     </div>
     <div id="list-acquirenti"></div>
   </div>
@@ -443,8 +455,24 @@ window._firebaseReady = true;
         <button class="btn btn-primary" onclick="openModal('proprietario')">+ Nuovo Proprietario</button>
       </div>
     </div>
-    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-      <input id="search-proprietari" class="form-control" placeholder="🔍  Nome, telefono, città, indirizzo immobile..." oninput="renderPersone(db.proprietari,'proprietari')" style="max-width:400px">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+      <div class="form-group" style="margin:0;flex:1;min-width:160px">
+        <label class="form-label">Nome / Cognome</label>
+        <input class="form-control" id="search-proprietari" placeholder="es. Ferrari" oninput="renderPersone('proprietari')">
+      </div>
+      <div class="form-group" style="margin:0;flex:1;min-width:140px">
+        <label class="form-label">Telefono</label>
+        <input class="form-control" id="search-prop-tel" placeholder="es. 333..." oninput="renderPersone('proprietari')">
+      </div>
+      <div class="form-group" style="margin:0;flex:1;min-width:140px">
+        <label class="form-label">Città</label>
+        <input class="form-control" id="search-prop-citta" placeholder="es. Roma" oninput="renderPersone('proprietari')">
+      </div>
+      <div class="form-group" style="margin:0;flex:1;min-width:160px">
+        <label class="form-label">Indirizzo immobile</label>
+        <input class="form-control" id="search-prop-indirizzo" placeholder="es. Via Roma" oninput="renderPersone('proprietari')">
+      </div>
+      <button class="btn-sm" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:8px 14px;cursor:pointer;font-family:'DM Sans',sans-serif" onclick="resetFiltri('proprietari')">✕ Reset</button>
     </div>
     <div id="list-proprietari"></div>
   </div>
@@ -458,12 +486,32 @@ window._firebaseReady = true;
         <button class="btn btn-primary" onclick="openModal('immobile')">+ Nuovo Immobile</button>
       </div>
     </div>
-    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
-      <input id="search-immobili" class="form-control" placeholder="🔍  Indirizzo, proprietario..." oninput="renderImmobili()" style="max-width:280px">
-      <input id="search-imm-tel" class="form-control" placeholder="📞 Telefono proprietario" oninput="renderImmobili()" style="max-width:210px">
-      <input id="search-imm-locali" class="form-control" type="number" placeholder="Locali" oninput="renderImmobili()" style="max-width:90px">
-      <input id="search-imm-pmin" class="form-control" type="number" placeholder="€ min" oninput="renderImmobili()" style="max-width:100px">
-      <input id="search-imm-pmax" class="form-control" type="number" placeholder="€ max" oninput="renderImmobili()" style="max-width:100px">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+      <div class="form-group" style="margin:0;flex:1;min-width:160px">
+        <label class="form-label">Indirizzo / Città</label>
+        <input class="form-control" id="search-immobili" placeholder="es. Via Roma" oninput="renderImmobili()">
+      </div>
+      <div class="form-group" style="margin:0;flex:1;min-width:160px">
+        <label class="form-label">Proprietario</label>
+        <input class="form-control" id="search-imm-prop" placeholder="es. Ferrari" oninput="renderImmobili()">
+      </div>
+      <div class="form-group" style="margin:0;flex:1;min-width:140px">
+        <label class="form-label">Tel. proprietario</label>
+        <input class="form-control" id="search-imm-tel" placeholder="es. 333..." oninput="renderImmobili()">
+      </div>
+      <div class="form-group" style="margin:0;flex:1;min-width:80px">
+        <label class="form-label">Locali</label>
+        <input class="form-control" id="search-imm-locali" type="number" placeholder="es. 3" oninput="renderImmobili()">
+      </div>
+      <div class="form-group" style="margin:0;flex:1;min-width:100px">
+        <label class="form-label">Prezzo min €</label>
+        <input class="form-control" id="search-imm-pmin" type="number" placeholder="es. 100000" oninput="renderImmobili()">
+      </div>
+      <div class="form-group" style="margin:0;flex:1;min-width:100px">
+        <label class="form-label">Prezzo max €</label>
+        <input class="form-control" id="search-imm-pmax" type="number" placeholder="es. 500000" oninput="renderImmobili()">
+      </div>
+      <button class="btn-sm" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:8px 14px;cursor:pointer;font-family:'DM Sans',sans-serif" onclick="resetFiltri('immobili')">✕ Reset</button>
     </div>
     <div id="list-immobili"></div>
   </div>
@@ -526,8 +574,16 @@ window._firebaseReady = true;
         <button class="btn btn-primary" onclick="openModal('operatore')">+ Nuovo Operatore</button>
       </div>
     </div>
-    <div style="display:flex;gap:8px;margin-bottom:16px">
-      <input id="search-operatori" class="form-control" placeholder="🔍  Nome, telefono..." oninput="renderOperatori()" style="max-width:360px">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+      <div class="form-group" style="margin:0;flex:1;min-width:160px">
+        <label class="form-label">Nome / Cognome</label>
+        <input class="form-control" id="search-operatori" placeholder="es. Mario Rossi" oninput="renderOperatori()">
+      </div>
+      <div class="form-group" style="margin:0;flex:1;min-width:140px">
+        <label class="form-label">Telefono</label>
+        <input class="form-control" id="search-op-tel" placeholder="es. 333..." oninput="renderOperatori()">
+      </div>
+      <button class="btn-sm" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:8px 14px;cursor:pointer;font-family:'DM Sans',sans-serif" onclick="resetFiltri('operatori')">✕ Reset</button>
     </div>
     <div id="list-operatori"></div>
   </div>
@@ -541,8 +597,20 @@ window._firebaseReady = true;
         <button class="btn btn-primary" onclick="openModal('altro')">+ Nuovo Contatto</button>
       </div>
     </div>
-    <div style="display:flex;gap:8px;margin-bottom:16px">
-      <input id="search-altri" class="form-control" placeholder="🔍  Nome, telefono, città..." oninput="renderAltri()" style="max-width:360px">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+      <div class="form-group" style="margin:0;flex:1;min-width:160px">
+        <label class="form-label">Nome / Cognome</label>
+        <input class="form-control" id="search-altri" placeholder="es. Bianchi" oninput="renderAltri()">
+      </div>
+      <div class="form-group" style="margin:0;flex:1;min-width:140px">
+        <label class="form-label">Telefono</label>
+        <input class="form-control" id="search-altri-tel" placeholder="es. 333..." oninput="renderAltri()">
+      </div>
+      <div class="form-group" style="margin:0;flex:1;min-width:140px">
+        <label class="form-label">Città</label>
+        <input class="form-control" id="search-altri-citta" placeholder="es. Torino" oninput="renderAltri()">
+      </div>
+      <button class="btn-sm" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:8px 14px;cursor:pointer;font-family:'DM Sans',sans-serif" onclick="resetFiltri('altri')">✕ Reset</button>
     </div>
     <div id="list-altri"></div>
   </div>
@@ -939,7 +1007,7 @@ async function addToGoogleCalendar(attivita) {
   const endDt   = `${attivita.data}T${endDtTime}`;
 
   const tipoIcon = attivita.tipo==='telefonata'?'📞':attivita.tipo==='messaggio'?'💬':'📅';
-  const tipoLabel = attivita.tipo ? attivita.tipo.charAt(0).toUpperCase()+attivita.tipo.slice(1) : 'Attività';
+  const tipoLabel = attivita.tipo==='telefonata'?'Telefonata':attivita.tipo==='messaggio'?'Messaggio':attivita.tipo==='appuntamento'?'Appuntamento':'Attività';
 
   let description = attivita.note || '';
   if(attivita.oggetto) description += '\nMessaggio: ' + attivita.oggetto;
@@ -1160,12 +1228,14 @@ function renderOperatori() {
   const listEl = document.getElementById('list-operatori');
   if(!countEl || !listEl) return;
   const q = (document.getElementById('search-operatori')||{}).value?.toLowerCase() || '';
-  const arr = db.operatori.filter(op => !q ||
-    `${op.nome} ${op.cognome}`.toLowerCase().includes(q) ||
-    (op.telefono||'').toLowerCase().includes(q) ||
-    (op.email||'').toLowerCase().includes(q)
-  );
-  countEl.textContent = `${arr.length}${q ? ' risultati su ' + db.operatori.length : ''} operatori`;
+  const qTel = (document.getElementById('search-op-tel')||{}).value?.toLowerCase() || '';
+  const arr = db.operatori.filter(op => {
+    if(q && !`${op.nome} ${op.cognome}`.toLowerCase().includes(q) && !(op.email||'').toLowerCase().includes(q)) return false;
+    if(qTel && !(op.telefono||'').toLowerCase().includes(qTel)) return false;
+    return true;
+  });
+  const hasFilter = q || qTel;
+  countEl.textContent = `${arr.length}${hasFilter ? ' risultati su ' + db.operatori.length : ''} operatori`;
   if(!arr.length) {
     listEl.innerHTML = `<span style="color:var(--muted);font-size:14px">${q ? 'Nessun operatore trovato.' : 'Nessun operatore. Aggiungi il primo!'}</span>`;
     return;
@@ -1240,24 +1310,29 @@ function renderPersone(tipo) {
   const listEl = document.getElementById('list-' + tipo);
   if(!countEl || !listEl) return;
 
-  const q = (document.getElementById('search-' + tipo)||{}).value?.toLowerCase() || '';
+  const isAcq = tipo === 'acquirenti';
+  const q       = (document.getElementById('search-' + tipo)||{}).value?.toLowerCase() || '';
+  const qTel    = (document.getElementById(isAcq ? 'search-acq-tel'    : 'search-prop-tel')||{}).value?.toLowerCase() || '';
+  const qCitta  = (document.getElementById(isAcq ? 'search-acq-citta'  : 'search-prop-citta')||{}).value?.toLowerCase() || '';
+  const qInd    = tipo === 'proprietari' ? ((document.getElementById('search-prop-indirizzo')||{}).value?.toLowerCase() || '') : '';
+
   let filtrati = arr;
-  if(q) {
+  if(q || qTel || qCitta || qInd) {
     filtrati = arr.filter(p => {
-      const base = `${p.nome} ${p.cognome} ${p.telefono||''} ${p.citta||''}`.toLowerCase().includes(q);
-      if(base) return true;
-      // Per proprietari: cerca anche nell'indirizzo degli immobili collegati
-      if(tipo === 'proprietari') {
+      if(q && !`${p.nome} ${p.cognome}`.toLowerCase().includes(q)) return false;
+      if(qTel && !(p.telefono||'').toLowerCase().includes(qTel)) return false;
+      if(qCitta && !(p.citta||'').toLowerCase().includes(qCitta)) return false;
+      if(qInd) {
         const immProp = db.immobili.filter(i => i.proprietarioId === p.id);
-        return immProp.some(i => `${i.indirizzo||''} ${i.citta||''}`.toLowerCase().includes(q));
+        if(!immProp.some(i => `${i.indirizzo||''} ${i.citta||''}`.toLowerCase().includes(qInd))) return false;
       }
-      return false;
+      return true;
     });
   }
-
-  countEl.textContent = `${filtrati.length}${q ? ' risultati su ' + arr.length : ' contatti registrati'}`;
+  const hasFilter = q || qTel || qCitta || qInd;
+  countEl.textContent = `${filtrati.length}${hasFilter ? ' risultati su ' + arr.length : (tipo==='acquirenti' ? ' clienti' : ' proprietari') + ' registrati'}`;
   listEl.innerHTML = filtrati.map(p => personaCard(p, tipoSing)).join('') ||
-    `<span style="color:var(--muted);font-size:14px">Nessun risultato trovato.</span>`;
+    `<span style="color:var(--muted);font-size:14px">${hasFilter ? 'Nessun risultato trovato.' : 'Nessun contatto. Aggiungi il primo!'}</span>`;
 }
 
 function personaCard(p, tipo) {
@@ -1358,14 +1433,20 @@ function renderAltri() {
   const countEl = document.getElementById('altri-count');
   const listEl = document.getElementById('list-altri');
   if(!countEl || !listEl) return;
-  const q = (document.getElementById('search-altri')||{}).value?.toLowerCase() || '';
-  const filtrati = db.altri.filter(p => !q ||
-    `${p.nome} ${p.cognome} ${p.telefono||''} ${p.citta||''}`.toLowerCase().includes(q)
-  );
-  countEl.textContent = `${filtrati.length}${q ? ' risultati su ' + db.altri.length : ' contatti registrati'}`;
+  const q      = (document.getElementById('search-altri')||{}).value?.toLowerCase() || '';
+  const qTel   = (document.getElementById('search-altri-tel')||{}).value?.toLowerCase() || '';
+  const qCitta = (document.getElementById('search-altri-citta')||{}).value?.toLowerCase() || '';
+  const filtrati = db.altri.filter(p => {
+    if(q && !`${p.nome} ${p.cognome}`.toLowerCase().includes(q)) return false;
+    if(qTel && !(p.telefono||'').toLowerCase().includes(qTel)) return false;
+    if(qCitta && !(p.citta||'').toLowerCase().includes(qCitta)) return false;
+    return true;
+  });
+  const hasFilter = q || qTel || qCitta;
+  countEl.textContent = `${filtrati.length}${hasFilter ? ' risultati su ' + db.altri.length : ' contatti registrati'}`;
   listEl.innerHTML = filtrati.length
     ? filtrati.map(p => personaCard(p, 'altro')).join('')
-    : `<span style="color:var(--muted);font-size:14px">${q ? 'Nessun risultato trovato.' : 'Nessun contatto. Aggiungi il primo!'}</span>`;
+    : `<span style="color:var(--muted);font-size:14px">${hasFilter ? 'Nessun risultato trovato.' : 'Nessun contatto. Aggiungi il primo!'}</span>`;
 }
 
 // ─────────────────────────────────────────────
@@ -1598,6 +1679,21 @@ function resetFiltriIncroci() {
   ['filter-zona','filter-prezzo','filter-locali','filter-mq'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
   const sel = document.getElementById('filter-contratto'); if(sel) sel.value = '';
   renderIncroci();
+}
+
+function resetFiltri(tipo) {
+  const ids = {
+    acquirenti:  ['search-acquirenti','search-acq-tel','search-acq-citta'],
+    proprietari: ['search-proprietari','search-prop-tel','search-prop-citta','search-prop-indirizzo'],
+    operatori:   ['search-operatori','search-op-tel'],
+    altri:       ['search-altri','search-altri-tel','search-altri-citta'],
+    immobili:    ['search-immobili','search-imm-prop','search-imm-tel','search-imm-locali','search-imm-pmin','search-imm-pmax'],
+  };
+  (ids[tipo]||[]).forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  if(tipo === 'acquirenti' || tipo === 'proprietari') renderPersone(tipo);
+  else if(tipo === 'operatori') renderOperatori();
+  else if(tipo === 'altri') renderAltri();
+  else if(tipo === 'immobili') renderImmobili();
 }
 
 function matchRichieste() {
@@ -1850,7 +1946,7 @@ function showAttivitaPopup(id, evt) {
   const imm = db.immobili.find(i => i.id === a.immobileId);
   const col = tipoColor(a.tipo);
   const icon = a.tipo==='telefonata'?'📞':a.tipo==='messaggio'?'💬':'📅';
-  const tipoLabel = a.tipo ? a.tipo.charAt(0).toUpperCase()+a.tipo.slice(1) : 'Attività';
+  const tipoLabel = a.tipo==='telefonata'?'Telefonate':a.tipo==='messaggio'?'Messaggi':a.tipo==='appuntamento'?'Appuntamenti':'Attività';
 
   let html = `
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
@@ -2333,6 +2429,7 @@ function renderImmobili() {
   if(!countEl || !listEl) return;
   // Solo immobili attivi (non inattivi/notizia/concorrenza)
   const q       = (document.getElementById('search-immobili')||{}).value?.toLowerCase() || '';
+  const qProp   = (document.getElementById('search-imm-prop')||{}).value?.toLowerCase() || '';
   const qTel    = (document.getElementById('search-imm-tel')||{}).value?.toLowerCase() || '';
   const qLocali = parseInt((document.getElementById('search-imm-locali')||{}).value) || 0;
   const qPmin   = parseFloat((document.getElementById('search-imm-pmin')||{}).value) || 0;
@@ -2340,10 +2437,10 @@ function renderImmobili() {
 
   const tuttiAttivi = db.immobili.filter(i => !isInattivo(i.tipoIncarico) && i.tipoIncarico !== 'venduto' && i.tipoIncarico !== 'locato');
   const attivi = tuttiAttivi.filter(i => {
-    if(q) {
+    if(q && !(i.indirizzo||'').toLowerCase().includes(q) && !(i.citta||'').toLowerCase().includes(q)) return false;
+    if(qProp) {
       const prop = db.proprietari.find(p => p.id === i.proprietarioId);
-      const propNome = prop ? `${prop.nome} ${prop.cognome}`.toLowerCase() : '';
-      if(!propNome.includes(q) && !(i.indirizzo||'').toLowerCase().includes(q) && !(i.citta||'').toLowerCase().includes(q)) return false;
+      if(!prop || !`${prop.nome} ${prop.cognome}`.toLowerCase().includes(qProp)) return false;
     }
     if(qTel) {
       const prop = db.proprietari.find(p => p.id === i.proprietarioId);
@@ -2361,7 +2458,7 @@ function renderImmobili() {
   const vend = db.immobili.filter(i => i.tipoIncarico === 'venduto');
   const loc = db.immobili.filter(i => i.tipoIncarico === 'locato');
   const trattAperte = (db.trattative||[]).filter(t => t.stato === 'aperta').length;
-  const hasFilter = q || qTel || qLocali || qPmin || qPmax;
+  const hasFilter = q || qProp || qTel || qLocali || qPmin || qPmax;
   countEl.textContent = hasFilter
     ? `${attivi.length} risultati su ${tuttiAttivi.length} immobili attivi`
     : `${tuttiAttivi.length} immobili attivi${trattAperte ? ' · ' + trattAperte + ' trattative' : ''}${vend.length ? ' · ' + vend.length + ' venduti' : ''}${loc.length ? ' · ' + loc.length + ' locati' : ''}${inattivi.length ? ' · ' + inattivi.length + ' inattivi' : ''}`;
@@ -2582,7 +2679,7 @@ function renderAttivita() {
     }).join('') || `<div style="color:var(--muted);font-size:13px;padding:8px 0">Nessuna ${tipo} registrata</div>`;
 
     return `<div class="act-section">
-      <div class="act-section-title" style="color:${tipoColor(tipo)}">${icons[tipo]} ${tipo.toUpperCase()}S</div>
+      <div class="act-section-title" style="color:${tipoColor(tipo)}">${icons[tipo]} ${tipo==='telefonata'?'TELEFONATE':tipo==='messaggio'?'MESSAGGI':'APPUNTAMENTI'}</div>
       ${rows}
     </div>`;
   }).join('');
