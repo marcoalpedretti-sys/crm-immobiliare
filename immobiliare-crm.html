@@ -169,10 +169,19 @@ window._firebaseReady = true;
   .form-label { color: var(--muted); font-size: 12px; letter-spacing: 1px; text-transform: uppercase; display: block; margin-bottom: 4px; }
   .form-control {
     width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
-    padding: 8px 12px; color: var(--text); font-size: 14px; font-family: 'DM Sans', sans-serif;
+    padding: 8px 12px; color: var(--text); font-size: 16px; font-family: 'DM Sans', sans-serif;
+    -webkit-user-select: text; user-select: text;
+    touch-action: manipulation;
   }
   .form-control:focus { outline: none; border-color: var(--accent); }
-  textarea.form-control { resize: vertical; }
+  textarea.form-control {
+    resize: vertical;
+    -webkit-user-select: text;
+    user-select: text;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    font-size: 16px; /* prevents iOS zoom on focus */
+  }
   .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
   /* TABS ACTIVITY */
@@ -1126,6 +1135,14 @@ function mapsLink(indirizzo, citta) {
   return `<a href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" title="Apri in Google Maps" style="display:inline-flex;align-items:center;gap:3px;color:var(--muted);font-size:11px;text-decoration:none;background:rgba(66,133,244,0.1);border:1px solid rgba(66,133,244,0.3);border-radius:6px;padding:2px 7px;white-space:nowrap;flex-shrink:0" onclick="event.stopPropagation()">🗺 Maps</a>`;
 }
 
+function focusNote() {
+  // Give browser time to render, then focus note field for dictation
+  setTimeout(() => {
+    const el = document.getElementById('f-note') || document.getElementById('f-note-imm') || document.getElementById('f-sel-note');
+    if(el) { el.focus(); el.setSelectionRange && el.setSelectionRange(el.value.length, el.value.length); }
+  }, 150);
+}
+
 function badge(text, color) {
   return `<span class="badge" style="background:${color}22;color:${color};border:1px solid ${color}44">${text}</span>`;
 }
@@ -2044,7 +2061,7 @@ function editAttivita(id) {
       </div>
     </div>
     <div class="form-group"><label class="form-label">Ora</label>
-      <input type="time" class="form-control" id="f-ora" value="${a.ora||'09:00'}" inputmode="text" enterkeyhint="done">
+      <input type="time" class="form-control" id="f-ora" value="${a.ora||'09:00'}" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true">
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Tipo Persona</label>
@@ -2061,16 +2078,16 @@ function editAttivita(id) {
       </div>
     </div>
     <div id="f-extra-durata" class="form-group" style="${a.tipo==='telefonata'?'':'display:none'}">
-      <label class="form-label">Durata</label><input class="form-control" id="f-durata" value="${a.durata||''}" inputmode="text" enterkeyhint="done">
+      <label class="form-label">Durata</label><input class="form-control" id="f-durata" value="${a.durata||''}" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true">
     </div>
     <div id="f-extra-orafine" class="form-group" style="${a.tipo==='appuntamento'?'':'display:none'}">
-      <label class="form-label">Fino alle</label><input type="time" class="form-control" id="f-orafine" value="${a.oraFine||''}" inputmode="text" enterkeyhint="done">
+      <label class="form-label">Fino alle</label><input type="time" class="form-control" id="f-orafine" value="${a.oraFine||''}" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true">
     </div>
     <div id="f-extra-oggetto" class="form-group" style="${a.tipo==='email'?'':'display:none'}">
-      <label class="form-label">Oggetto Email</label><input class="form-control" id="f-oggetto" value="${a.oggetto||''}" inputmode="text" enterkeyhint="done">
+      <label class="form-label">Oggetto Email</label><input class="form-control" id="f-oggetto" value="${a.oggetto||''}" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true">
     </div>
     <div id="f-extra-luogo" class="form-group" style="${a.tipo==='appuntamento'?'':'display:none'}">
-      <label class="form-label">Luogo</label><input class="form-control" id="f-luogo" value="${a.luogo||''}" inputmode="text" enterkeyhint="done">
+      <label class="form-label">Luogo</label><input class="form-control" id="f-luogo" value="${a.luogo||''}" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true">
     </div>
     <div class="form-group"><label class="form-label">Immobile di riferimento</label>
       <select class="form-control" id="f-immobile-id">
@@ -2079,7 +2096,7 @@ function editAttivita(id) {
       </select>
     </div>
     <div class="form-group"><label class="form-label">Note</label>
-      <textarea class="form-control" id="f-note" inputmode="text" enterkeyhint="done" rows="3">${a.note||''}</textarea>
+      <textarea class="form-control" id="f-note" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true" rows="3">${a.note||''}</textarea>
     </div>
     ${db.operatori && db.operatori.length ? `<div class="form-group"><label class="form-label">👨‍💼 Operatori</label><div class="op-select" id="op-sel-attivita"></div></div>` : ''}
     <div id="gcal-note" style="display:none;background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.3);border-radius:8px;padding:10px;margin-bottom:14px;font-size:12px;color:#60a5fa">
@@ -2251,7 +2268,7 @@ function nuovaTrattativa(immobileId) {
     <div style="margin-bottom:16px;font-size:14px;color:var(--muted)">Immobile: <strong style="color:var(--text)">${imm ? imm.titolo : ''}</strong></div>
     <div class="form-group"><label class="form-label">Cliente</label><select class="form-control" id="f-sel-cliente">${acqOpts}</select></div>
     <div class="form-group"><label class="form-label">Data</label><input type="date" class="form-control" id="f-sel-data" value="${new Date().toISOString().slice(0,10)}"></div>
-    <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-sel-note" inputmode="text" enterkeyhint="done" rows="3" placeholder="Note trattativa..." style="resize:vertical"></textarea></div>
+    <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-sel-note" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true" rows="3" placeholder="Note trattativa..." style="resize:vertical"></textarea></div>
     <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="salvaTrattativa()">💾 Aggiungi Trattativa</button>
   `;
   document.getElementById('modal-overlay').classList.add('open');
@@ -2273,7 +2290,7 @@ function modificaTrattativa(trattId) {
     <div style="margin-bottom:16px;font-size:14px;color:var(--muted)">Immobile: <strong style="color:var(--text)">${imm ? imm.titolo : ''}</strong></div>
     <div class="form-group"><label class="form-label">Cliente</label><select class="form-control" id="f-sel-cliente">${acqOpts}</select></div>
     <div class="form-group"><label class="form-label">Data</label><input type="date" class="form-control" id="f-sel-data" value="${t.data||''}"></div>
-    <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-sel-note" inputmode="text" enterkeyhint="done" rows="3" style="resize:vertical">${t.note||''}</textarea></div>
+    <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-sel-note" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true" rows="3" style="resize:vertical">${t.note||''}</textarea></div>
     <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="salvaTrattativa()">💾 Salva Modifiche</button>
   `;
   document.getElementById('modal-overlay').classList.add('open');
@@ -2589,7 +2606,7 @@ function openDriveModal(tipo, id) {
       <label class="form-label">Link cartella Google Drive</label>
       <input type="url" class="form-control" id="f-drive-url"
         placeholder="https://drive.google.com/drive/folders/..."
-        value="${currentUrl}" inputmode="text" enterkeyhint="done">
+        value="${currentUrl}" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true">
     </div>
     ${currentUrl ? `<a href="${currentUrl}" target="_blank" class="btn btn-primary" style="display:block;text-align:center;text-decoration:none;margin-bottom:12px;background:rgba(52,168,83,0.8)">📂 Apri Cartella Drive</a>` : ''}
     <button class="btn btn-primary" style="width:100%" onclick="saveDriveUrl()">💾 Salva Link</button>
@@ -2737,15 +2754,15 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
   if(tipo==='operatore') {
     html = `
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Nome</label><input class="form-control" id="f-nome" value="${data.nome||''}" inputmode="text" enterkeyhint="done"></div>
-        <div class="form-group"><label class="form-label">Cognome</label><input class="form-control" id="f-cognome" value="${data.cognome||''}" inputmode="text" enterkeyhint="done"></div>
+        <div class="form-group"><label class="form-label">Nome</label><input class="form-control" id="f-nome" value="${data.nome||''}" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true"></div>
+        <div class="form-group"><label class="form-label">Cognome</label><input class="form-control" id="f-cognome" value="${data.cognome||''}" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true"></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Email</label><input class="form-control" id="f-email" type="email" value="${data.email||''}"></div>
-        <div class="form-group"><label class="form-label">Telefono</label><input class="form-control" id="f-telefono" value="${data.telefono||''}" inputmode="text" enterkeyhint="done"></div>
+        <div class="form-group"><label class="form-label">Telefono</label><input class="form-control" id="f-telefono" value="${data.telefono||''}" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true"></div>
       </div>
-      <div class="form-group"><label class="form-label">Ruolo / Titolo</label><input class="form-control" id="f-ruolo" placeholder="es. Agente, Responsabile..." value="${data.ruolo||''}" inputmode="text" enterkeyhint="done"></div>
-      <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note" inputmode="text" enterkeyhint="done" rows="2">${data.note||''}</textarea></div>
+      <div class="form-group"><label class="form-label">Ruolo / Titolo</label><input class="form-control" id="f-ruolo" placeholder="es. Agente, Responsabile..." value="${data.ruolo||''}" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true"></div>
+      <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true" rows="2">${data.note||''}</textarea></div>
       <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="saveOperatore()">💾 ${id?'Salva Modifiche':'Aggiungi Operatore'}</button>`;
   }
   else if(tipo==='richiesta') {
@@ -2762,7 +2779,7 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
             ${zoneEsistenti.map(z=>`<span class="op-tag" style="gap:5px">${z}<span class="op-tag-x" onclick="rimuoviZona('${z.replace(/'/g,"\\'")}')">×</span></span>`).join('')}
           </div>
           <div style="display:flex;gap:6px">
-            <input class="form-control" id="f-zona-input" placeholder="es. Milano, Navigli, Via Roma..." style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();aggiungiZona();}" inputmode="text" enterkeyhint="done">
+            <input class="form-control" id="f-zona-input" placeholder="es. Milano, Navigli, Via Roma..." style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();aggiungiZona();}" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true">
             <button type="button" onclick="aggiungiZona()" style="background:rgba(200,169,110,0.2);border:1px solid rgba(200,169,110,0.4);color:var(--accent);border-radius:8px;padding:8px 14px;cursor:pointer;font-size:13px;font-family:'DM Sans',sans-serif;flex-shrink:0">+ Aggiungi</button>
           </div>
         </div>
@@ -2790,20 +2807,20 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
         <div class="form-group"><label class="form-label">Locali min</label><input class="form-control" id="f-locali-min" type="number" value="${data.localiMin||''}"></div>
         <div class="form-group"><label class="form-label">Mq min</label><input class="form-control" id="f-mq-min" type="number" value="${data.mqMin||''}"></div>
       </div>
-      <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note" inputmode="text" enterkeyhint="done" rows="2">${data.note||''}</textarea></div>
+      <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true" rows="2">${data.note||''}</textarea></div>
       <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="saveRichiesta()">💾 ${id?'Salva Modifiche':'Aggiungi Richiesta'}</button>`;
   }
   else if(tipo==='acquirente' || tipo==='proprietario' || tipo==='altro') {
     html = `
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Nome</label><input class="form-control" id="f-nome" value="${data.nome||''}" inputmode="text" enterkeyhint="done"></div>
-        <div class="form-group"><label class="form-label">Cognome</label><input class="form-control" id="f-cognome" value="${data.cognome||''}" inputmode="text" enterkeyhint="done"></div>
+        <div class="form-group"><label class="form-label">Nome</label><input class="form-control" id="f-nome" value="${data.nome||''}" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true"></div>
+        <div class="form-group"><label class="form-label">Cognome</label><input class="form-control" id="f-cognome" value="${data.cognome||''}" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true"></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Email</label><input class="form-control" id="f-email" type="email" value="${data.email||''}"></div>
-        <div class="form-group"><label class="form-label">Telefono</label><input class="form-control" id="f-telefono" value="${data.telefono||''}" inputmode="text" enterkeyhint="done"></div>
+        <div class="form-group"><label class="form-label">Telefono</label><input class="form-control" id="f-telefono" value="${data.telefono||''}" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true"></div>
       </div>
-      <div class="form-group"><label class="form-label">Città</label><input class="form-control" id="f-citta" value="${data.citta||''}" inputmode="text" enterkeyhint="done"></div>
+      <div class="form-group"><label class="form-label">Città</label><input class="form-control" id="f-citta" value="${data.citta||''}" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true"></div>
       ${tipo==='acquirente' ? `
       <div class="form-row">
         <div class="form-group"><label class="form-label">Ruolo Cliente</label>
@@ -2812,9 +2829,9 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
             <option value="locatario" ${data.ruoloCliente==='locatario'?'selected':''}>🔑 Locatario</option>
           </select>
         </div>
-        <div class="form-group"><label class="form-label">Budget (€)</label><input class="form-control" id="f-budget" value="${data.budget||''}" inputmode="text" enterkeyhint="done"></div>
+        <div class="form-group"><label class="form-label">Budget (€)</label><input class="form-control" id="f-budget" value="${data.budget||''}" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true"></div>
       </div>` : ''}
-      ${tipo==='altro' ? `<div class="form-group"><label class="form-label">Ruolo / Categoria</label><input class="form-control" id="f-ruolo" placeholder="es. Notaio, Banca, Geometra..." value="${data.ruolo||''}" inputmode="text" enterkeyhint="done"></div>` : ''}
+      ${tipo==='altro' ? `<div class="form-group"><label class="form-label">Ruolo / Categoria</label><input class="form-control" id="f-ruolo" placeholder="es. Notaio, Banca, Geometra..." value="${data.ruolo||''}" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true"></div>` : ''}
       ${(tipo==='acquirente' || tipo==='proprietario') ? `
       <div style="background:rgba(200,169,110,0.07);border:1px solid rgba(200,169,110,0.2);border-radius:10px;padding:14px;margin-bottom:14px">
         <div style="color:var(--accent);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:12px">Adempimenti Obbligatori</div>
@@ -2829,7 +2846,7 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
           </label>
         </div>
       </div>` : ''}
-      <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note" inputmode="text" enterkeyhint="done" rows="3">${data.note||''}</textarea></div>
+      <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true" rows="3">${data.note||''}</textarea></div>
       ${db.operatori && db.operatori.length ? `<div class="form-group"><label class="form-label">👨‍💼 Operatori</label><div class="op-select" id="op-sel-persona"></div></div>` : ''}
       <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="savePersona()">💾 ${id?'Salva Modifiche':'Aggiungi'}</button>`;
   }
@@ -2839,7 +2856,7 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
     immOpIds = data.operatoriIds && data.operatoriIds.length ? data.operatoriIds :
       (data.proprietarioId ? (db.proprietari.find(p=>p.id===data.proprietarioId)||{}).operatoriIds||[] : []);
     html = `
-      <div class="form-group"><label class="form-label">Titolo</label><input class="form-control" id="f-titolo" value="${data.titolo||''}" inputmode="text" enterkeyhint="done"></div>
+      <div class="form-group"><label class="form-label">Titolo</label><input class="form-control" id="f-titolo" value="${data.titolo||''}" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true"></div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Tipo</label>
           <select class="form-control" id="f-tipo">
@@ -2868,16 +2885,16 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
           <input type="date" class="form-control" id="f-fine-incarico" value="${data.fineIncarico||''}">
         </div>
       </div>
-      <div class="form-group"><label class="form-label">Indirizzo</label><input class="form-control" id="f-indirizzo" value="${data.indirizzo||''}" inputmode="text" enterkeyhint="done"></div>
-      <div class="form-group"><label class="form-label">Città</label><input class="form-control" id="f-citta" value="${data.citta||''}" inputmode="text" enterkeyhint="done"></div>
+      <div class="form-group"><label class="form-label">Indirizzo</label><input class="form-control" id="f-indirizzo" value="${data.indirizzo||''}" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true"></div>
+      <div class="form-group"><label class="form-label">Città</label><input class="form-control" id="f-citta" value="${data.citta||''}" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true"></div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Prezzo (€)</label><input class="form-control" id="f-prezzo" value="${data.prezzo||''}" inputmode="text" enterkeyhint="done"></div>
+        <div class="form-group"><label class="form-label">Prezzo (€)</label><input class="form-control" id="f-prezzo" value="${data.prezzo||''}" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true"></div>
         <div class="form-group"><label class="form-label">Mq</label><input class="form-control" id="f-mq" type="number" value="${data.mq||''}"></div>
       </div>
       <div class="form-group"><label class="form-label">Locali</label><input class="form-control" id="f-locali" type="number" value="${data.locali||''}"></div>
       <div class="form-group"><label class="form-label">Proprietario</label><select class="form-control" id="f-proprietario">${propOpts}</select></div>
       ${db.operatori && db.operatori.length ? `<div class="form-group"><label class="form-label">👨‍💼 Operatori</label><div class="op-select" id="op-sel-immobile"></div></div>` : ''}
-      <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note-imm" rows="3" inputmode="text" enterkeyhint="done" style="resize:vertical">${data.note||''}</textarea></div>
+      <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note-imm" rows="3" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true" style="resize:vertical">${data.note||''}</textarea></div>
       <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="saveImmobile()">💾 ${id?'Salva Modifiche':'Aggiungi'}</button>`;
   }
   else if(tipo==='attivita') {
@@ -2896,7 +2913,7 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
         </div>
         <div class="form-group"><label class="form-label">Data</label><input type="date" class="form-control" id="f-data" value="${today}"></div>
       </div>
-      <div class="form-group"><label class="form-label">Ora</label><input type="time" class="form-control" id="f-ora" value="09:00" inputmode="text" enterkeyhint="done"></div>
+      <div class="form-group"><label class="form-label">Ora</label><input type="time" class="form-control" id="f-ora" value="09:00" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true"></div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Tipo Persona</label>
           <select class="form-control" id="f-persona-tipo" onchange="switchPersoneOpts()">
@@ -2911,17 +2928,17 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
           </select>
         </div>
       </div>
-      <div id="f-extra-durata" class="form-group" style="display:none"><label class="form-label">Durata</label><input class="form-control" id="f-durata" placeholder="es. 30 min" inputmode="text" enterkeyhint="done"></div>
-      <div id="f-extra-orafine" class="form-group" style="display:none"><label class="form-label">Fino alle</label><input type="time" class="form-control" id="f-orafine" inputmode="text" enterkeyhint="done"></div>
-      <div id="f-extra-oggetto" class="form-group" style="display:none"><label class="form-label">Testo / Oggetto</label><input class="form-control" id="f-oggetto" inputmode="text" enterkeyhint="done"></div>
-      <div id="f-extra-luogo" class="form-group" style="display:none"><label class="form-label">Luogo</label><input class="form-control" id="f-luogo" inputmode="text" enterkeyhint="done"></div>
+      <div id="f-extra-durata" class="form-group" style="display:none"><label class="form-label">Durata</label><input class="form-control" id="f-durata" placeholder="es. 30 min" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true"></div>
+      <div id="f-extra-orafine" class="form-group" style="display:none"><label class="form-label">Fino alle</label><input type="time" class="form-control" id="f-orafine" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true"></div>
+      <div id="f-extra-oggetto" class="form-group" style="display:none"><label class="form-label">Testo / Oggetto</label><input class="form-control" id="f-oggetto" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true"></div>
+      <div id="f-extra-luogo" class="form-group" style="display:none"><label class="form-label">Luogo</label><input class="form-control" id="f-luogo" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true"></div>
       <div class="form-group"><label class="form-label">Immobile di riferimento</label>
         <select class="form-control" id="f-immobile-id">
           <option value="">-- nessuno --</option>
           ${db.immobili.map(i=>`<option value="${i.id}">${i.titolo}${i.contratto?' ('+i.contratto+')':''}</option>`).join('')}
         </select>
       </div>
-      <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note" inputmode="text" enterkeyhint="done" rows="3"></textarea></div>
+      <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true" rows="3"></textarea></div>
       ${db.operatori && db.operatori.length ? `<div class="form-group"><label class="form-label">👨‍💼 Operatori</label><div class="op-select" id="op-sel-attivita"></div></div>` : ''}
       <div id="gcal-note" style="display:none;background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.3);border-radius:8px;padding:10px;margin-bottom:14px;font-size:12px;color:#60a5fa">
         📅 L'appuntamento verrà salvato e potrai aggiungerlo a Google Calendar dopo
@@ -2946,6 +2963,15 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
     } else { switchPersoneOpts(); }
     if(document.getElementById('op-sel-attivita')) buildOpSelect('op-sel-attivita', []);
   }
+  // Ensure note fields are focusable for dictation on mobile
+  setTimeout(() => {
+    document.querySelectorAll('#modal-body textarea').forEach(el => {
+      el.setAttribute('inputmode','text');
+      el.setAttribute('autocorrect','on');
+      el.setAttribute('autocapitalize','sentences');
+      el.setAttribute('spellcheck','true');
+    });
+  }, 100);
 }
 
 function switchPersoneOpts() {
