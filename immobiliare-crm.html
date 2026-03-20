@@ -1468,7 +1468,9 @@ function renderRichieste() {
             <div style="flex:1">
               <div class="card-name">${acq ? acq.nome+' '+acq.cognome : '—'}</div>
               <div style="display:flex;gap:14px;margin-top:8px;flex-wrap:wrap">
-                ${r.zonaDesiderata ? `<span style="color:var(--muted);font-size:13px">📍 ${r.zonaDesiderata}</span>` : ''}
+                ${r.zoneDesiderate && r.zoneDesiderate.length
+                ? `<div style="display:flex;flex-wrap:wrap;gap:5px">${r.zoneDesiderate.map(z=>`<span style="background:rgba(200,169,110,0.12);border:1px solid rgba(200,169,110,0.35);color:var(--accent);border-radius:20px;padding:2px 8px;font-size:11px">📍 ${z}</span>`).join('')}</div>`
+                : r.zonaDesiderata ? `<span style="color:var(--muted);font-size:13px">📍 ${r.zonaDesiderata}</span>` : ''}
                 ${r.prezzoMin||r.prezzoMax ? `<span style="color:var(--accent);font-size:13px">💰 ${r.prezzoMin||'0'} – ${r.prezzoMax||'∞'} €</span>` : ''}
                 ${r.localiMin ? `<span style="color:var(--muted);font-size:13px">🚪 min ${r.localiMin} locali</span>` : ''}
                 ${r.mqMin ? `<span style="color:var(--muted);font-size:13px">📐 min ${r.mqMin} mq</span>` : ''}
@@ -1533,6 +1535,22 @@ function computeIncroci(filtri = {}) {
       let maxScore = 0;
       const criteri = [];
 
+      // Zone desiderate (PRIORITÀ MASSIMA — peso 40, obbligatorio se specificato)
+      const zone = r.zoneDesiderate && r.zoneDesiderate.length ? r.zoneDesiderate :
+                   (r.zonaDesiderata ? [r.zonaDesiderata] : []);
+      if(zone.length) {
+        maxScore += 40;
+        const immAddr = `${imm.indirizzo||''} ${imm.citta||''}`.toLowerCase();
+        const zonaMatch = zone.some(z => immAddr.includes(z.toLowerCase()));
+        if(zonaMatch) {
+          score += 40;
+          criteri.push('Zona ✓');
+        } else {
+          // Zona specificata ma non trovata → immobile non compatibile
+          return;
+        }
+      }
+
       // Contratto (peso 20)
       maxScore += 20;
       if(!r.contratto || !imm.contratto || r.contratto === imm.contratto) { score += 20; criteri.push('Contratto ✓'); }
@@ -1568,16 +1586,6 @@ function computeIncroci(filtri = {}) {
       if(imm.mq >= mqMin) { score += 15; criteri.push('Mq ✓'); }
       else if(mqMin > 0 && imm.mq > 0) {
         score += Math.round(15 * (imm.mq / mqMin));
-      }
-
-      // Zona (bonus —non esclude, ma aggiunge punti)
-      if(r.zonaDesiderata) {
-        const zona = r.zonaDesiderata.toLowerCase();
-        if(imm.indirizzo?.toLowerCase().includes(zona) || imm.citta?.toLowerCase().includes(zona)) {
-          criteri.push('Zona ✓');
-          // Bonus zona conta come sostituto del 100%
-          score = Math.min(100, score + 10);
-        }
       }
 
       const pct = maxScore > 0 ? Math.min(100, Math.round((score / maxScore) * 100)) : 0;
@@ -1630,7 +1638,9 @@ function renderIncroci() {
             ${acq.operatoriIds && acq.operatoriIds.length ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:2px">${operatoriTags(acq.operatoriIds)}</div>` : ''}
           </div>` : ''}
           <div style="display:flex;gap:10px;margin-top:6px;flex-wrap:wrap">
-            ${r.zonaDesiderata ? `<span style="color:var(--muted);font-size:12px">📍 ${r.zonaDesiderata}</span>` : ''}
+            ${r.zoneDesiderate && r.zoneDesiderate.length
+              ? `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px">${r.zoneDesiderate.map(z=>`<span style="background:rgba(200,169,110,0.12);border:1px solid rgba(200,169,110,0.35);color:var(--accent);border-radius:20px;padding:2px 8px;font-size:11px">📍 ${z}</span>`).join('')}</div>`
+              : r.zonaDesiderata ? `<span style="color:var(--muted);font-size:12px">📍 ${r.zonaDesiderata}</span>` : ''}
             ${r.prezzoMax ? `<span style="color:var(--accent);font-size:12px">💰 max €${r.prezzoMax}</span>` : ''}
             ${r.localiMin ? `<span style="color:var(--muted);font-size:12px">🚪 min ${r.localiMin} loc.</span>` : ''}
             ${r.mqMin ? `<span style="color:var(--muted);font-size:12px">📐 min ${r.mqMin} mq</span>` : ''}
@@ -1708,7 +1718,10 @@ function matchRichieste() {
       if(r.prezzoMin) { const p = parseFloat((i.prezzo||'').replace(/\./g,'').replace(',','.')); if(p && p < parseFloat(r.prezzoMin)) return false; }
       if(r.localiMin && i.locali && i.locali < parseInt(r.localiMin)) return false;
       if(r.mqMin && i.mq && i.mq < parseInt(r.mqMin)) return false;
-      if(r.zonaDesiderata && i.indirizzo) { const zona = r.zonaDesiderata.toLowerCase(); if(!i.indirizzo.toLowerCase().includes(zona) && !i.citta.toLowerCase().includes(zona)) return false; }
+      if(r.zoneDesiderate && r.zoneDesiderate.length) {
+        const addr = `${i.indirizzo||''} ${i.citta||''}`.toLowerCase();
+        if(!r.zoneDesiderate.some(z => addr.includes(z.toLowerCase()))) return false;
+      } else if(r.zonaDesiderata && i.indirizzo) { const zona = r.zonaDesiderata.toLowerCase(); if(!i.indirizzo.toLowerCase().includes(zona) && !i.citta.toLowerCase().includes(zona)) return false; }
       return true;
     });
     if(matches.length) results.push({ r, acq, matches });
@@ -2502,6 +2515,7 @@ function immobileCard(i, isInatt = false) {
           ${acq ? `<span style="color:var(--muted);font-size:12px">🤝 Cliente: <span style="color:#4ade80">${acq.nome} ${acq.cognome}</span></span>` : ''}
           ${i.driveUrl ? `<a href="${i.driveUrl}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;color:#34a853;font-size:12px;text-decoration:none;background:rgba(52,168,83,0.1);border:1px solid rgba(52,168,83,0.3);border-radius:6px;padding:3px 8px;">📁 Cartella Drive</a>` : ''}
           ${i.operatoriIds && i.operatoriIds.length ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">${operatoriTags(i.operatoriIds)}</div>` : ''}
+        ${i.note ? `<div class="card-note" style="margin-top:8px">"${i.note}"</div>` : ''}
         </div>
       </div>
       <div class="actions-wrap">
@@ -2734,16 +2748,35 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
   }
   else if(tipo==='richiesta') {
     const acqOpts = db.acquirenti.map(a=>`<option value="${a.id}" ${data.acquirenteId===a.id?'selected':''}>${a.nome} ${a.cognome}</option>`).join('');
+    const zoneEsistenti = (data.zoneDesiderate||[]);
     html = `
       <div class="form-group"><label class="form-label">Cliente</label>
         <select class="form-control" id="f-acq-rich"><option value="">-- seleziona --</option>${acqOpts}</select>
       </div>
+      <div class="form-group">
+        <label class="form-label">📍 Zone / Paesi desiderati <span style="color:var(--muted);font-size:11px">(aggiungi più zone, hanno priorità massima)</span></label>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 10px;min-height:42px;">
+          <div id="zone-tags" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px">
+            ${zoneEsistenti.map(z=>`<span class="op-tag" style="gap:5px">${z}<span class="op-tag-x" onclick="rimuoviZona('${z.replace(/'/g,"\\'")}')">×</span></span>`).join('')}
+          </div>
+          <div style="display:flex;gap:6px">
+            <input class="form-control" id="f-zona-input" placeholder="es. Milano, Navigli, Via Roma..." style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();aggiungiZona();}">
+            <button type="button" onclick="aggiungiZona()" style="background:rgba(200,169,110,0.2);border:1px solid rgba(200,169,110,0.4);color:var(--accent);border-radius:8px;padding:8px 14px;cursor:pointer;font-size:13px;font-family:'DM Sans',sans-serif;flex-shrink:0">+ Aggiungi</button>
+          </div>
+        </div>
+        <input type="hidden" id="f-zone-data" value='${JSON.stringify(zoneEsistenti).replace(/'/g,"&#39;")}'>
+      </div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Zona desiderata</label><input class="form-control" id="f-zona" placeholder="es. Milano centro" value="${data.zonaDesiderata||''}"></div>
         <div class="form-group"><label class="form-label">Tipo immobile</label>
           <select class="form-control" id="f-tipo-imm">
             <option value="">-- qualsiasi --</option>
             ${['Appartamento','Villa','Ufficio','Negozio','Terreno'].map(t=>`<option ${data.tipo===t?'selected':''}>${t}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Contratto</label>
+          <select class="form-control" id="f-contr-rich">
+            <option value="">-- qualsiasi --</option>
+            ${['vendita','locazione','affitto'].map(c=>`<option value="${c}" ${data.contratto===c?'selected':''}>${c.charAt(0).toUpperCase()+c.slice(1)}</option>`).join('')}
           </select>
         </div>
       </div>
@@ -2754,12 +2787,6 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
       <div class="form-row">
         <div class="form-group"><label class="form-label">Locali min</label><input class="form-control" id="f-locali-min" type="number" value="${data.localiMin||''}"></div>
         <div class="form-group"><label class="form-label">Mq min</label><input class="form-control" id="f-mq-min" type="number" value="${data.mqMin||''}"></div>
-      </div>
-      <div class="form-group"><label class="form-label">Contratto</label>
-        <select class="form-control" id="f-contr-rich">
-          <option value="">-- qualsiasi --</option>
-          ${['vendita','locazione','affitto'].map(c=>`<option value="${c}" ${data.contratto===c?'selected':''}>${c.charAt(0).toUpperCase()+c.slice(1)}</option>`).join('')}
-        </select>
       </div>
       <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note" inputmode="text" enterkeyhint="done" rows="2">${data.note||''}</textarea></div>
       <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="saveRichiesta()">💾 ${id?'Salva Modifiche':'Aggiungi Richiesta'}</button>`;
@@ -2848,6 +2875,7 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
       <div class="form-group"><label class="form-label">Locali</label><input class="form-control" id="f-locali" type="number" value="${data.locali||''}"></div>
       <div class="form-group"><label class="form-label">Proprietario</label><select class="form-control" id="f-proprietario">${propOpts}</select></div>
       ${db.operatori && db.operatori.length ? `<div class="form-group"><label class="form-label">👨‍💼 Operatori</label><div class="op-select" id="op-sel-immobile"></div></div>` : ''}
+      <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note-imm" rows="3" inputmode="text" enterkeyhint="done" style="resize:vertical">${data.note||''}</textarea></div>
       <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="saveImmobile()">💾 ${id?'Salva Modifiche':'Aggiungi'}</button>`;
   }
   else if(tipo==='attivita') {
@@ -3111,6 +3139,7 @@ function saveImmobile() {
     mq: parseInt(g('f-mq'))||0, locali: parseInt(g('f-locali'))||0,
     proprietarioId: parseInt(g('f-proprietario'))||null,
     operatoriIds: getOpSelectIds('op-sel-immobile'),
+    note: (document.getElementById('f-note-imm')||{}).value || '',
   };
 
   let savedId = editingId;
@@ -3141,11 +3170,43 @@ function saveImmobile() {
   toast(editingId ? 'Modifiche salvate' : 'Immobile aggiunto!');
 }
 
+function aggiungiZona() {
+  const input = document.getElementById('f-zona-input');
+  if(!input) return;
+  const val = input.value.trim();
+  if(!val) return;
+  const hidden = document.getElementById('f-zone-data');
+  const zone = JSON.parse(hidden.value || '[]');
+  if(zone.includes(val)) { input.value = ''; return; }
+  zone.push(val);
+  hidden.value = JSON.stringify(zone);
+  input.value = '';
+  // Re-render tags
+  const tagsEl = document.getElementById('zone-tags');
+  if(tagsEl) tagsEl.innerHTML = zone.map(z =>
+    `<span class="op-tag" style="gap:5px">${z}<span class="op-tag-x" onclick="rimuoviZona('${z.replace(/'/g,"\\'")}')">×</span></span>`
+  ).join('');
+}
+
+function rimuoviZona(zona) {
+  const hidden = document.getElementById('f-zone-data');
+  if(!hidden) return;
+  const zone = JSON.parse(hidden.value || '[]').filter(z => z !== zona);
+  hidden.value = JSON.stringify(zone);
+  const tagsEl = document.getElementById('zone-tags');
+  if(tagsEl) tagsEl.innerHTML = zone.map(z =>
+    `<span class="op-tag" style="gap:5px">${z}<span class="op-tag-x" onclick="rimuoviZona('${z.replace(/'/g,"\\'")}')">×</span></span>`
+  ).join('');
+}
+
 function saveRichiesta() {
   if(!db.richieste) db.richieste = [];
+  const zoneEl = document.getElementById('f-zone-data');
+  const zoneDesiderate = zoneEl ? JSON.parse(zoneEl.value || '[]') : [];
   const obj = {
     acquirenteId: parseInt(document.getElementById('f-acq-rich').value)||null,
-    zonaDesiderata: document.getElementById('f-zona').value.trim(),
+    zoneDesiderate,
+    zonaDesiderata: zoneDesiderate[0] || '', // compatibilità retroattiva
     tipo: document.getElementById('f-tipo-imm').value,
     prezzoMin: document.getElementById('f-prezzo-min').value.trim(),
     prezzoMax: document.getElementById('f-prezzo-max').value.trim(),
@@ -3407,7 +3468,10 @@ function pdfRichiesta(id) {
     if(r.prezzoMin) { const p = parseFloat((i.prezzo||'').replace(/\./g,'').replace(',','.')); if(p && p < parseFloat(r.prezzoMin)) return false; }
     if(r.localiMin && i.locali && i.locali < parseInt(r.localiMin)) return false;
     if(r.mqMin && i.mq && i.mq < parseInt(r.mqMin)) return false;
-    if(r.zonaDesiderata && i.indirizzo) { const zona = r.zonaDesiderata.toLowerCase(); if(!i.indirizzo.toLowerCase().includes(zona) && !i.citta.toLowerCase().includes(zona)) return false; }
+    if(r.zoneDesiderate && r.zoneDesiderate.length) {
+        const addr = `${i.indirizzo||''} ${i.citta||''}`.toLowerCase();
+        if(!r.zoneDesiderate.some(z => addr.includes(z.toLowerCase()))) return false;
+      } else if(r.zonaDesiderata && i.indirizzo) { const zona = r.zonaDesiderata.toLowerCase(); if(!i.indirizzo.toLowerCase().includes(zona) && !i.citta.toLowerCase().includes(zona)) return false; }
     return true;
   });
 
@@ -3447,7 +3511,10 @@ function pdfIncroci() {
       if(r.prezzoMin) { const p = parseFloat((i.prezzo||'').replace(/\./g,'').replace(',','.')); if(p && p < parseFloat(r.prezzoMin)) return false; }
       if(r.localiMin && i.locali && i.locali < parseInt(r.localiMin)) return false;
       if(r.mqMin && i.mq && i.mq < parseInt(r.mqMin)) return false;
-      if(r.zonaDesiderata && i.indirizzo) { const zona = r.zonaDesiderata.toLowerCase(); if(!i.indirizzo.toLowerCase().includes(zona) && !i.citta.toLowerCase().includes(zona)) return false; }
+      if(r.zoneDesiderate && r.zoneDesiderate.length) {
+        const addr = `${i.indirizzo||''} ${i.citta||''}`.toLowerCase();
+        if(!r.zoneDesiderate.some(z => addr.includes(z.toLowerCase()))) return false;
+      } else if(r.zonaDesiderata && i.indirizzo) { const zona = r.zonaDesiderata.toLowerCase(); if(!i.indirizzo.toLowerCase().includes(zona) && !i.citta.toLowerCase().includes(zona)) return false; }
       return true;
     });
     if(!matches.length) return;
