@@ -180,23 +180,8 @@ window._firebaseReady = true;
     user-select: text;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
-    font-size: 16px; /* prevents iOS zoom on focus */
-    padding-bottom: 36px; /* space for mic button */
+    font-size: 16px;
   }
-
-  /* MIC DICTATION BUTTON */
-  .note-wrap { position: relative; }
-  .mic-btn {
-    position: absolute; bottom: 8px; right: 8px;
-    background: rgba(200,169,110,0.15); border: 1px solid rgba(200,169,110,0.4);
-    color: var(--accent); border-radius: 50%; width: 32px; height: 32px;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; font-size: 16px; transition: all 0.2s; z-index: 2;
-    -webkit-tap-highlight-color: transparent; user-select: none;
-  }
-  .mic-btn:hover { background: rgba(200,169,110,0.3); }
-  .mic-btn.listening { background: rgba(248,113,113,0.25); border-color: #f87171; color: #f87171; animation: pulse-mic 1s infinite; }
-  @keyframes pulse-mic { 0%,100%{transform:scale(1)} 50%{transform:scale(1.15)} }
   .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
   /* TABS ACTIVITY */
@@ -1157,65 +1142,10 @@ function focusNote() {
   }, 150);
 }
 
-// ─── Web Speech API — Dettatura Vocale ───
-let _micRecognizer = null;
-let _micActive = false;
+// ─── Dictation: usa la dettatura nativa della tastiera ───
+function initMicButtons() { /* nessuna implementazione — usa il microfono della tastiera */ }
+function toggleDictation() {}
 
-function initMicButtons() {
-  document.querySelectorAll('#modal-body textarea').forEach(ta => {
-    if(ta.closest('.note-wrap')) return;
-    const wrap = document.createElement('div');
-    wrap.className = 'note-wrap';
-    ta.parentNode.insertBefore(wrap, ta);
-    wrap.appendChild(ta);
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'mic-btn';
-    btn.title = 'Dettatura vocale';
-    btn.innerHTML = '🎙';
-    btn.addEventListener('click', (e) => { e.preventDefault(); toggleDictation(ta, btn); });
-    wrap.appendChild(btn);
-  });
-}
-
-function toggleDictation(textarea, btn) {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SR) { toast('⚠️ Dettatura non supportata da questo browser', 'orange'); return; }
-  if(_micActive && _micRecognizer) { _micRecognizer.stop(); return; }
-  _micRecognizer = new SR();
-  _micRecognizer.lang = 'it-IT';
-  _micRecognizer.continuous = true;
-  _micRecognizer.interimResults = true;
-  _micRecognizer.maxAlternatives = 1;
-  const baseText = textarea.value;
-  let finalSoFar = '';
-  _micRecognizer.onstart = () => {
-    _micActive = true; btn.classList.add('listening'); btn.innerHTML = '⏹';
-    textarea.focus();
-    toast('🎙 Dettatura avviata — parla ora…', 'green');
-  };
-  _micRecognizer.onresult = (e) => {
-    // Rebuild from scratch every time to avoid duplicates
-    let allFinal = '';
-    let interim = '';
-    for(let i = 0; i < e.results.length; i++) {
-      if(e.results[i].isFinal) allFinal += e.results[i][0].transcript + ' ';
-      else interim += e.results[i][0].transcript;
-    }
-    const prefix = baseText ? baseText.trimEnd() + ' ' : '';
-    textarea.value = prefix + allFinal + interim;
-    textarea.scrollTop = textarea.scrollHeight;
-  };
-  _micRecognizer.onerror = (e) => {
-    _micActive = false; btn.classList.remove('listening'); btn.innerHTML = '🎙';
-    if(e.error !== 'aborted') toast('⚠️ Errore: ' + e.error, 'orange');
-  };
-  _micRecognizer.onend = () => {
-    _micActive = false; btn.classList.remove('listening'); btn.innerHTML = '🎙';
-    _micRecognizer = null;
-  };
-  _micRecognizer.start();
-}
 
 function badge(text, color) {
   return `<span class="badge" style="background:${color}22;color:${color};border:1px solid ${color}44">${text}</span>`;
