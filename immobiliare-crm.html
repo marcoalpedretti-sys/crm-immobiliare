@@ -428,6 +428,9 @@ window._firebaseReady = true;
         <button class="btn btn-primary" onclick="openModal('acquirente')">+ Nuovo Cliente</button>
       </div>
     </div>
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+      <input id="search-acquirenti" class="form-control" placeholder="🔍  Nome, telefono, città..." oninput="renderPersone(db.acquirenti,'acquirenti')" style="max-width:360px">
+    </div>
     <div id="list-acquirenti"></div>
   </div>
 
@@ -440,6 +443,9 @@ window._firebaseReady = true;
         <button class="btn btn-primary" onclick="openModal('proprietario')">+ Nuovo Proprietario</button>
       </div>
     </div>
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+      <input id="search-proprietari" class="form-control" placeholder="🔍  Nome, telefono, città, indirizzo immobile..." oninput="renderPersone(db.proprietari,'proprietari')" style="max-width:400px">
+    </div>
     <div id="list-proprietari"></div>
   </div>
 
@@ -451,6 +457,13 @@ window._firebaseReady = true;
         <button class="btn-dashboard" onclick="showPage('dashboard')">◈ Dashboard</button>
         <button class="btn btn-primary" onclick="openModal('immobile')">+ Nuovo Immobile</button>
       </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+      <input id="search-immobili" class="form-control" placeholder="🔍  Indirizzo, proprietario..." oninput="renderImmobili()" style="max-width:280px">
+      <input id="search-imm-tel" class="form-control" placeholder="📞 Telefono proprietario" oninput="renderImmobili()" style="max-width:210px">
+      <input id="search-imm-locali" class="form-control" type="number" placeholder="Locali" oninput="renderImmobili()" style="max-width:90px">
+      <input id="search-imm-pmin" class="form-control" type="number" placeholder="€ min" oninput="renderImmobili()" style="max-width:100px">
+      <input id="search-imm-pmax" class="form-control" type="number" placeholder="€ max" oninput="renderImmobili()" style="max-width:100px">
     </div>
     <div id="list-immobili"></div>
   </div>
@@ -513,6 +526,9 @@ window._firebaseReady = true;
         <button class="btn btn-primary" onclick="openModal('operatore')">+ Nuovo Operatore</button>
       </div>
     </div>
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <input id="search-operatori" class="form-control" placeholder="🔍  Nome, telefono..." oninput="renderOperatori()" style="max-width:360px">
+    </div>
     <div id="list-operatori"></div>
   </div>
 
@@ -524,6 +540,9 @@ window._firebaseReady = true;
         <button class="btn-dashboard" onclick="showPage('dashboard')">◈ Dashboard</button>
         <button class="btn btn-primary" onclick="openModal('altro')">+ Nuovo Contatto</button>
       </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <input id="search-altri" class="form-control" placeholder="🔍  Nome, telefono, città..." oninput="renderAltri()" style="max-width:360px">
     </div>
     <div id="list-altri"></div>
   </div>
@@ -1026,6 +1045,19 @@ function getPersona(tipo, id) {
   if(tipo === 'altro') return db.altri.find(p => p.id === id);
   return null;
 }
+function waLink(telefono) {
+  if(!telefono) return '';
+  const num = telefono.replace(/[\s\-\(\)]/g, '');
+  const intl = num.startsWith('+') ? num : (num.startsWith('00') ? '+' + num.slice(2) : '+39' + num);
+  return `<a href="https://wa.me/${intl.replace('+','')}" target="_blank" title="WhatsApp" style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:rgba(37,211,102,0.15);border:1px solid rgba(37,211,102,0.4);text-decoration:none;font-size:13px;flex-shrink:0" onclick="event.stopPropagation()">🟢</a>`;
+}
+
+function mapsLink(indirizzo, citta) {
+  if(!indirizzo && !citta) return '';
+  const q = encodeURIComponent(`${indirizzo||''} ${citta||''}`.trim());
+  return `<a href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" title="Apri in Google Maps" style="display:inline-flex;align-items:center;gap:3px;color:var(--muted);font-size:11px;text-decoration:none;background:rgba(66,133,244,0.1);border:1px solid rgba(66,133,244,0.3);border-radius:6px;padding:2px 7px;white-space:nowrap;flex-shrink:0" onclick="event.stopPropagation()">🗺 Maps</a>`;
+}
+
 function badge(text, color) {
   return `<span class="badge" style="background:${color}22;color:${color};border:1px solid ${color}44">${text}</span>`;
 }
@@ -1127,18 +1159,24 @@ function renderOperatori() {
   const countEl = document.getElementById('op-count');
   const listEl = document.getElementById('list-operatori');
   if(!countEl || !listEl) return;
-  countEl.textContent = db.operatori.length + ' operatori registrati';
-  if(!db.operatori.length) {
-    listEl.innerHTML = '<span style="color:var(--muted);font-size:14px">Nessun operatore. Aggiungi il primo!</span>';
+  const q = (document.getElementById('search-operatori')||{}).value?.toLowerCase() || '';
+  const arr = db.operatori.filter(op => !q ||
+    `${op.nome} ${op.cognome}`.toLowerCase().includes(q) ||
+    (op.telefono||'').toLowerCase().includes(q) ||
+    (op.email||'').toLowerCase().includes(q)
+  );
+  countEl.textContent = `${arr.length}${q ? ' risultati su ' + db.operatori.length : ''} operatori`;
+  if(!arr.length) {
+    listEl.innerHTML = `<span style="color:var(--muted);font-size:14px">${q ? 'Nessun operatore trovato.' : 'Nessun operatore. Aggiungi il primo!'}</span>`;
     return;
   }
-  listEl.innerHTML = db.operatori.map(op => `
+  listEl.innerHTML = arr.map(op => `
     <div class="card">
       <div class="card-header">
         <div>
           <div class="card-name">👨‍💼 ${op.nome} ${op.cognome}</div>
           <div class="card-sub">${op.email ? `<a href="https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(op.email)}" target="_blank" style="color:var(--muted);text-decoration:none">✉️ ${op.email}</a>` : ''}</div>
-          <div class="card-sub">${op.telefono ? `<a href="tel:${op.telefono}" style="color:var(--muted);text-decoration:none">📞 ${op.telefono}</a>` : ''}</div>
+          <div class="card-sub" style="display:flex;align-items:center;gap:6px">${op.telefono ? `<a href="tel:${op.telefono}" style="color:var(--muted);text-decoration:none">📞 ${op.telefono}</a>${waLink(op.telefono)}` : ''}</div>
           ${op.ruolo ? `<div style="color:var(--accent);font-size:12px;margin-top:4px">🏷️ ${op.ruolo}</div>` : ''}
         </div>
         <div class="actions-wrap">
@@ -1201,8 +1239,25 @@ function renderPersone(tipo) {
   const countEl = document.getElementById(tipo==='acquirenti'?'acq-count':'prop-count');
   const listEl = document.getElementById('list-' + tipo);
   if(!countEl || !listEl) return;
-  countEl.textContent = arr.length + (tipo==='acquirenti' ? ' clienti registrati' : ' contatti registrati');
-  listEl.innerHTML = arr.map(p => personaCard(p, tipoSing)).join('');
+
+  const q = (document.getElementById('search-' + tipo)||{}).value?.toLowerCase() || '';
+  let filtrati = arr;
+  if(q) {
+    filtrati = arr.filter(p => {
+      const base = `${p.nome} ${p.cognome} ${p.telefono||''} ${p.citta||''}`.toLowerCase().includes(q);
+      if(base) return true;
+      // Per proprietari: cerca anche nell'indirizzo degli immobili collegati
+      if(tipo === 'proprietari') {
+        const immProp = db.immobili.filter(i => i.proprietarioId === p.id);
+        return immProp.some(i => `${i.indirizzo||''} ${i.citta||''}`.toLowerCase().includes(q));
+      }
+      return false;
+    });
+  }
+
+  countEl.textContent = `${filtrati.length}${q ? ' risultati su ' + arr.length : ' contatti registrati'}`;
+  listEl.innerHTML = filtrati.map(p => personaCard(p, tipoSing)).join('') ||
+    `<span style="color:var(--muted);font-size:14px">Nessun risultato trovato.</span>`;
 }
 
 function personaCard(p, tipo) {
@@ -1224,7 +1279,7 @@ function personaCard(p, tipo) {
     <div class="card-header">
       <div>
         <div class="card-name">${p.nome} ${p.cognome}</div>
-        <div class="card-sub">📍 ${p.citta||''} &nbsp;•&nbsp; ${p.telefono ? `<a href="tel:${p.telefono}" style="color:var(--muted);text-decoration:none" onclick="event.stopPropagation()">📞 ${p.telefono}</a>` : ''}</div>
+        <div class="card-sub">📍 ${p.citta||''} &nbsp;•&nbsp; ${p.telefono ? `<a href="tel:${p.telefono}" style="color:var(--muted);text-decoration:none" onclick="event.stopPropagation()">📞 ${p.telefono}</a>${waLink(p.telefono)}` : ''}</div>
         <div class="card-sub">${p.email ? `<a href="https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(p.email)}" target="_blank" style="color:var(--muted);text-decoration:none" onclick="event.stopPropagation()">✉️ ${p.email}</a>` : ''}</div>
         ${p.budget ? `<div style="color:var(--accent);font-size:13px;margin-top:4px">💰 Budget: €${p.budget}</div>` : ''}
         ${p.ruoloCliente && tipo==='acquirente' ? `<div style="margin-top:4px">${badge(
@@ -1303,10 +1358,14 @@ function renderAltri() {
   const countEl = document.getElementById('altri-count');
   const listEl = document.getElementById('list-altri');
   if(!countEl || !listEl) return;
-  countEl.textContent = db.altri.length + ' contatti registrati';
-  listEl.innerHTML = db.altri.length
-    ? db.altri.map(p => personaCard(p, 'altro')).join('')
-    : '<span style="color:var(--muted);font-size:14px">Nessun contatto. Aggiungi il primo!</span>';
+  const q = (document.getElementById('search-altri')||{}).value?.toLowerCase() || '';
+  const filtrati = db.altri.filter(p => !q ||
+    `${p.nome} ${p.cognome} ${p.telefono||''} ${p.citta||''}`.toLowerCase().includes(q)
+  );
+  countEl.textContent = `${filtrati.length}${q ? ' risultati su ' + db.altri.length : ' contatti registrati'}`;
+  listEl.innerHTML = filtrati.length
+    ? filtrati.map(p => personaCard(p, 'altro')).join('')
+    : `<span style="color:var(--muted);font-size:14px">${q ? 'Nessun risultato trovato.' : 'Nessun contatto. Aggiungi il primo!'}</span>`;
 }
 
 // ─────────────────────────────────────────────
@@ -1484,7 +1543,7 @@ function renderIncroci() {
             👥 ${acq ? acq.nome+' '+acq.cognome : '— Cliente non trovato'}
           </div>
           ${acq ? `<div style="display:flex;gap:14px;margin-top:5px;flex-wrap:wrap">
-            ${acq.telefono ? `<a href="tel:${acq.telefono}" style="color:var(--text);font-size:13px;text-decoration:none">📞 ${acq.telefono}</a>` : ''}
+            ${acq.telefono ? `<a href="tel:${acq.telefono}" style="color:var(--text);font-size:13px;text-decoration:none">📞 ${acq.telefono}</a>${waLink(acq.telefono)}` : ''}
             ${acq.email ? `<a href="https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(acq.email)}" target="_blank" style="color:var(--text);font-size:13px;text-decoration:none">✉️ ${acq.email}</a>` : ''}
             ${acq.citta ? `<span style="color:var(--muted);font-size:13px">📍 ${acq.citta}</span>` : ''}
             ${acq.operatoriIds && acq.operatoriIds.length ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:2px">${operatoriTags(acq.operatoriIds)}</div>` : ''}
@@ -1512,7 +1571,7 @@ function renderIncroci() {
                 <span style="font-size:11px;color:var(--muted)">${score>=80?'Ottimo':score>=50?'Buono':'Parziale'}</span>
               </div>
               <div style="font-size:14px;font-weight:600">${imm.titolo}</div>
-              <div style="color:var(--muted);font-size:12px;margin-top:2px">📍 ${imm.indirizzo||''}, ${imm.citta||''}</div>
+              <div style="color:var(--muted);font-size:12px;margin-top:2px;display:flex;align-items:center;gap:8px">📍 ${imm.indirizzo||''}, ${imm.citta||''} ${mapsLink(imm.indirizzo, imm.citta)}</div>
               <div style="display:flex;gap:12px;margin-top:6px;flex-wrap:wrap">
                 <span style="color:var(--accent);font-size:13px;font-weight:700">€${imm.prezzo}</span>
                 <span style="color:var(--muted);font-size:12px">📐 ${imm.mq} mq</span>
@@ -1806,7 +1865,7 @@ function showAttivitaPopup(id, evt) {
     <span style="color:var(--muted)">${a.personaTipo==='acquirente'?'👥':a.personaTipo==='proprietario'?'🏠':'👤'} </span>
     <strong>${p.nome} ${p.cognome}</strong>
     ${p.ruolo?`<span style="color:var(--muted);font-size:11px"> · ${p.ruolo}</span>`:''}
-    ${p.telefono?`<br><a href="tel:${p.telefono}" style="color:#4ade80;font-size:12px;text-decoration:none">📞 ${p.telefono}</a>`:''}
+    ${p.telefono?`<br><span style="display:inline-flex;align-items:center;gap:6px"><a href="tel:${p.telefono}" style="color:#4ade80;font-size:12px;text-decoration:none">📞 ${p.telefono}</a>${waLink(p.telefono)}</span>`:''}
     ${p.email?`<br><a href="https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(p.email)}" target="_blank" style="color:#60a5fa;font-size:12px;text-decoration:none">✉️ ${p.email}</a>`:''}
   </div>`;
 
@@ -1909,7 +1968,7 @@ function editAttivita(id) {
       </select>
     </div>
     <div class="form-group"><label class="form-label">Note</label>
-      <textarea class="form-control" id="f-note" rows="3">${a.note||''}</textarea>
+      <textarea class="form-control" id="f-note" inputmode="text" enterkeyhint="done" rows="3">${a.note||''}</textarea>
     </div>
     ${db.operatori && db.operatori.length ? `<div class="form-group"><label class="form-label">👨‍💼 Operatori</label><div class="op-select" id="op-sel-attivita"></div></div>` : ''}
     <div id="gcal-note" style="display:none;background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.3);border-radius:8px;padding:10px;margin-bottom:14px;font-size:12px;color:#60a5fa">
@@ -1979,7 +2038,7 @@ function renderTrattativeVenduti(tipo) {
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px">
           <div style="flex:1">
             <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:600;margin-bottom:4px">🏢 ${imm.titolo}</div>
-            <div style="color:var(--muted);font-size:12px">📍 ${imm.indirizzo||''}, ${imm.citta||''}</div>
+            <div style="color:var(--muted);font-size:12px;display:flex;align-items:center;gap:8px">📍 ${imm.indirizzo||''}, ${imm.citta||''} ${mapsLink(imm.indirizzo, imm.citta)}</div>
             <div style="display:flex;gap:12px;margin-top:6px;flex-wrap:wrap;align-items:center">
               <span style="color:var(--accent);font-size:14px;font-weight:700">€${imm.prezzo}</span>
               <span style="color:var(--muted);font-size:12px">📐 ${imm.mq} mq · 🚪 ${imm.locali} loc.</span>
@@ -2039,7 +2098,7 @@ function cardIncrocio(imm, prop, cliente, link, tipo) {
           <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:600">🏢 ${imm.titolo}</div>
           ${isReadOnly ? badge(tipo==='locato'?'🔑 Locato':'✅ Venduto', tipo==='locato'?'#a78bfa':'#34d399') : ''}
         </div>
-        <div style="color:var(--muted);font-size:12px">📍 ${imm.indirizzo||''}, ${imm.citta||''}</div>
+        <div style="color:var(--muted);font-size:12px;display:flex;align-items:center;gap:8px">📍 ${imm.indirizzo||''}, ${imm.citta||''} ${mapsLink(imm.indirizzo, imm.citta)}</div>
         <div style="display:flex;gap:12px;margin-top:6px;flex-wrap:wrap;align-items:center">
           <span style="color:var(--accent);font-size:14px;font-weight:700">€${imm.prezzo}</span>
           ${imm.contratto ? badge(contrattoIcon(imm.contratto)+' '+imm.contratto, contrattoColor(imm.contratto)) : ''}
@@ -2081,7 +2140,7 @@ function nuovaTrattativa(immobileId) {
     <div style="margin-bottom:16px;font-size:14px;color:var(--muted)">Immobile: <strong style="color:var(--text)">${imm ? imm.titolo : ''}</strong></div>
     <div class="form-group"><label class="form-label">Cliente</label><select class="form-control" id="f-sel-cliente">${acqOpts}</select></div>
     <div class="form-group"><label class="form-label">Data</label><input type="date" class="form-control" id="f-sel-data" value="${new Date().toISOString().slice(0,10)}"></div>
-    <div class="form-group"><label class="form-label">Note</label><input class="form-control" id="f-sel-note" placeholder="Note trattativa..."></div>
+    <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-sel-note" inputmode="text" enterkeyhint="done" rows="3" placeholder="Note trattativa..." style="resize:vertical"></textarea></div>
     <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="salvaTrattativa()">💾 Aggiungi Trattativa</button>
   `;
   document.getElementById('modal-overlay').classList.add('open');
@@ -2103,7 +2162,7 @@ function modificaTrattativa(trattId) {
     <div style="margin-bottom:16px;font-size:14px;color:var(--muted)">Immobile: <strong style="color:var(--text)">${imm ? imm.titolo : ''}</strong></div>
     <div class="form-group"><label class="form-label">Cliente</label><select class="form-control" id="f-sel-cliente">${acqOpts}</select></div>
     <div class="form-group"><label class="form-label">Data</label><input type="date" class="form-control" id="f-sel-data" value="${t.data||''}"></div>
-    <div class="form-group"><label class="form-label">Note</label><input class="form-control" id="f-sel-note" value="${t.note||''}"></div>
+    <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-sel-note" inputmode="text" enterkeyhint="done" rows="3" style="resize:vertical">${t.note||''}</textarea></div>
     <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="salvaTrattativa()">💾 Salva Modifiche</button>
   `;
   document.getElementById('modal-overlay').classList.add('open');
@@ -2273,12 +2332,39 @@ function renderImmobili() {
   const listEl = document.getElementById('list-immobili');
   if(!countEl || !listEl) return;
   // Solo immobili attivi (non inattivi/notizia/concorrenza)
-  const attivi = db.immobili.filter(i => !isInattivo(i.tipoIncarico) && i.tipoIncarico !== 'venduto' && i.tipoIncarico !== 'locato');
+  const q       = (document.getElementById('search-immobili')||{}).value?.toLowerCase() || '';
+  const qTel    = (document.getElementById('search-imm-tel')||{}).value?.toLowerCase() || '';
+  const qLocali = parseInt((document.getElementById('search-imm-locali')||{}).value) || 0;
+  const qPmin   = parseFloat((document.getElementById('search-imm-pmin')||{}).value) || 0;
+  const qPmax   = parseFloat((document.getElementById('search-imm-pmax')||{}).value) || 0;
+
+  const tuttiAttivi = db.immobili.filter(i => !isInattivo(i.tipoIncarico) && i.tipoIncarico !== 'venduto' && i.tipoIncarico !== 'locato');
+  const attivi = tuttiAttivi.filter(i => {
+    if(q) {
+      const prop = db.proprietari.find(p => p.id === i.proprietarioId);
+      const propNome = prop ? `${prop.nome} ${prop.cognome}`.toLowerCase() : '';
+      if(!propNome.includes(q) && !(i.indirizzo||'').toLowerCase().includes(q) && !(i.citta||'').toLowerCase().includes(q)) return false;
+    }
+    if(qTel) {
+      const prop = db.proprietari.find(p => p.id === i.proprietarioId);
+      if(!(prop?.telefono||'').toLowerCase().includes(qTel)) return false;
+    }
+    if(qLocali && i.locali !== qLocali) return false;
+    if(qPmin || qPmax) {
+      const prezzo = parseFloat((i.prezzo||'').toString().replace(/[^\d.]/g,'')) || 0;
+      if(qPmin && prezzo < qPmin) return false;
+      if(qPmax && prezzo > qPmax) return false;
+    }
+    return true;
+  });
   const inattivi = db.immobili.filter(i => i.tipoIncarico==='inattivo'||i.tipoIncarico==='notizia'||i.tipoIncarico==='concorrenza');
   const vend = db.immobili.filter(i => i.tipoIncarico === 'venduto');
   const loc = db.immobili.filter(i => i.tipoIncarico === 'locato');
   const trattAperte = (db.trattative||[]).filter(t => t.stato === 'aperta').length;
-  countEl.textContent = `${attivi.length} immobili attivi${trattAperte ? ' · ' + trattAperte + ' trattative' : ''}${vend.length ? ' · ' + vend.length + ' venduti' : ''}${loc.length ? ' · ' + loc.length + ' locati' : ''}${inattivi.length ? ' · ' + inattivi.length + ' inattivi' : ''}`;
+  const hasFilter = q || qTel || qLocali || qPmin || qPmax;
+  countEl.textContent = hasFilter
+    ? `${attivi.length} risultati su ${tuttiAttivi.length} immobili attivi`
+    : `${tuttiAttivi.length} immobili attivi${trattAperte ? ' · ' + trattAperte + ' trattative' : ''}${vend.length ? ' · ' + vend.length + ' venduti' : ''}${loc.length ? ' · ' + loc.length + ' locati' : ''}${inattivi.length ? ' · ' + inattivi.length + ' inattivi' : ''}`;
   listEl.innerHTML = attivi.map(i => immobileCard(i)).join('') || '<span style="color:var(--muted)">Nessun immobile attivo</span>';
 }
 
@@ -2303,7 +2389,7 @@ function immobileCard(i, isInatt = false) {
     <div class="card-header">
       <div style="flex:1">
         <div class="card-name">${i.titolo}</div>
-        <div class="card-sub">📍 ${i.indirizzo}, ${i.citta}</div>
+        <div class="card-sub" style="display:flex;align-items:center;gap:8px">📍 ${i.indirizzo}, ${i.citta} ${mapsLink(i.indirizzo, i.citta)}</div>
         <div style="display:flex;gap:16px;margin-top:8px;flex-wrap:wrap;align-items:center">
           <span style="color:var(--accent);font-size:15px;font-weight:700">€${i.prezzo}</span>
           <span style="color:var(--muted);font-size:13px">📐 ${i.mq} mq</span>
@@ -2546,7 +2632,7 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
         <div class="form-group"><label class="form-label">Telefono</label><input class="form-control" id="f-telefono" value="${data.telefono||''}"></div>
       </div>
       <div class="form-group"><label class="form-label">Ruolo / Titolo</label><input class="form-control" id="f-ruolo" placeholder="es. Agente, Responsabile..." value="${data.ruolo||''}"></div>
-      <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note" rows="2">${data.note||''}</textarea></div>
+      <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note" inputmode="text" enterkeyhint="done" rows="2">${data.note||''}</textarea></div>
       <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="saveOperatore()">💾 ${id?'Salva Modifiche':'Aggiungi Operatore'}</button>`;
   }
   else if(tipo==='richiesta') {
@@ -2578,7 +2664,7 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
           ${['vendita','locazione','affitto'].map(c=>`<option value="${c}" ${data.contratto===c?'selected':''}>${c.charAt(0).toUpperCase()+c.slice(1)}</option>`).join('')}
         </select>
       </div>
-      <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note" rows="2">${data.note||''}</textarea></div>
+      <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note" inputmode="text" enterkeyhint="done" rows="2">${data.note||''}</textarea></div>
       <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="saveRichiesta()">💾 ${id?'Salva Modifiche':'Aggiungi Richiesta'}</button>`;
   }
   else if(tipo==='acquirente' || tipo==='proprietario' || tipo==='altro') {
@@ -2617,7 +2703,7 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
           </label>
         </div>
       </div>` : ''}
-      <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note" rows="3">${data.note||''}</textarea></div>
+      <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note" inputmode="text" enterkeyhint="done" rows="3">${data.note||''}</textarea></div>
       ${db.operatori && db.operatori.length ? `<div class="form-group"><label class="form-label">👨‍💼 Operatori</label><div class="op-select" id="op-sel-persona"></div></div>` : ''}
       <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="savePersona()">💾 ${id?'Salva Modifiche':'Aggiungi'}</button>`;
   }
@@ -2708,7 +2794,7 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
           ${db.immobili.map(i=>`<option value="${i.id}">${i.titolo}${i.contratto?' ('+i.contratto+')':''}</option>`).join('')}
         </select>
       </div>
-      <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note" rows="3"></textarea></div>
+      <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note" inputmode="text" enterkeyhint="done" rows="3"></textarea></div>
       ${db.operatori && db.operatori.length ? `<div class="form-group"><label class="form-label">👨‍💼 Operatori</label><div class="op-select" id="op-sel-attivita"></div></div>` : ''}
       <div id="gcal-note" style="display:none;background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.3);border-radius:8px;padding:10px;margin-bottom:14px;font-size:12px;color:#60a5fa">
         📅 L'appuntamento verrà salvato e potrai aggiungerlo a Google Calendar dopo
