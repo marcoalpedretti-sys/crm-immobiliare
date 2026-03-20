@@ -1195,13 +1195,15 @@ function toggleDictation(textarea, btn) {
     toast('🎙 Dettatura avviata — parla ora…', 'green');
   };
   _micRecognizer.onresult = (e) => {
+    // Rebuild from scratch every time to avoid duplicates
+    let allFinal = '';
     let interim = '';
-    for(let i = e.resultIndex; i < e.results.length; i++) {
-      if(e.results[i].isFinal) finalSoFar += e.results[i][0].transcript + ' ';
+    for(let i = 0; i < e.results.length; i++) {
+      if(e.results[i].isFinal) allFinal += e.results[i][0].transcript + ' ';
       else interim += e.results[i][0].transcript;
     }
     const prefix = baseText ? baseText.trimEnd() + ' ' : '';
-    textarea.value = prefix + finalSoFar + interim;
+    textarea.value = prefix + allFinal + interim;
     textarea.scrollTop = textarea.scrollHeight;
   };
   _micRecognizer.onerror = (e) => {
