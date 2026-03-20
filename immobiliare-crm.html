@@ -2044,7 +2044,7 @@ function editAttivita(id) {
       </div>
     </div>
     <div class="form-group"><label class="form-label">Ora</label>
-      <input type="time" class="form-control" id="f-ora" value="${a.ora||'09:00'}">
+      <input type="time" class="form-control" id="f-ora" value="${a.ora||'09:00'}" inputmode="text" enterkeyhint="done">
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Tipo Persona</label>
@@ -2061,16 +2061,16 @@ function editAttivita(id) {
       </div>
     </div>
     <div id="f-extra-durata" class="form-group" style="${a.tipo==='telefonata'?'':'display:none'}">
-      <label class="form-label">Durata</label><input class="form-control" id="f-durata" value="${a.durata||''}">
+      <label class="form-label">Durata</label><input class="form-control" id="f-durata" value="${a.durata||''}" inputmode="text" enterkeyhint="done">
     </div>
     <div id="f-extra-orafine" class="form-group" style="${a.tipo==='appuntamento'?'':'display:none'}">
-      <label class="form-label">Fino alle</label><input type="time" class="form-control" id="f-orafine" value="${a.oraFine||''}">
+      <label class="form-label">Fino alle</label><input type="time" class="form-control" id="f-orafine" value="${a.oraFine||''}" inputmode="text" enterkeyhint="done">
     </div>
     <div id="f-extra-oggetto" class="form-group" style="${a.tipo==='email'?'':'display:none'}">
-      <label class="form-label">Oggetto Email</label><input class="form-control" id="f-oggetto" value="${a.oggetto||''}">
+      <label class="form-label">Oggetto Email</label><input class="form-control" id="f-oggetto" value="${a.oggetto||''}" inputmode="text" enterkeyhint="done">
     </div>
     <div id="f-extra-luogo" class="form-group" style="${a.tipo==='appuntamento'?'':'display:none'}">
-      <label class="form-label">Luogo</label><input class="form-control" id="f-luogo" value="${a.luogo||''}">
+      <label class="form-label">Luogo</label><input class="form-control" id="f-luogo" value="${a.luogo||''}" inputmode="text" enterkeyhint="done">
     </div>
     <div class="form-group"><label class="form-label">Immobile di riferimento</label>
       <select class="form-control" id="f-immobile-id">
@@ -2589,7 +2589,7 @@ function openDriveModal(tipo, id) {
       <label class="form-label">Link cartella Google Drive</label>
       <input type="url" class="form-control" id="f-drive-url"
         placeholder="https://drive.google.com/drive/folders/..."
-        value="${currentUrl}">
+        value="${currentUrl}" inputmode="text" enterkeyhint="done">
     </div>
     ${currentUrl ? `<a href="${currentUrl}" target="_blank" class="btn btn-primary" style="display:block;text-align:center;text-decoration:none;margin-bottom:12px;background:rgba(52,168,83,0.8)">📂 Apri Cartella Drive</a>` : ''}
     <button class="btn btn-primary" style="width:100%" onclick="saveDriveUrl()">💾 Salva Link</button>
@@ -2737,14 +2737,14 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
   if(tipo==='operatore') {
     html = `
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Nome</label><input class="form-control" id="f-nome" value="${data.nome||''}"></div>
-        <div class="form-group"><label class="form-label">Cognome</label><input class="form-control" id="f-cognome" value="${data.cognome||''}"></div>
+        <div class="form-group"><label class="form-label">Nome</label><input class="form-control" id="f-nome" value="${data.nome||''}" inputmode="text" enterkeyhint="done"></div>
+        <div class="form-group"><label class="form-label">Cognome</label><input class="form-control" id="f-cognome" value="${data.cognome||''}" inputmode="text" enterkeyhint="done"></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Email</label><input class="form-control" id="f-email" type="email" value="${data.email||''}"></div>
-        <div class="form-group"><label class="form-label">Telefono</label><input class="form-control" id="f-telefono" value="${data.telefono||''}"></div>
+        <div class="form-group"><label class="form-label">Telefono</label><input class="form-control" id="f-telefono" value="${data.telefono||''}" inputmode="text" enterkeyhint="done"></div>
       </div>
-      <div class="form-group"><label class="form-label">Ruolo / Titolo</label><input class="form-control" id="f-ruolo" placeholder="es. Agente, Responsabile..." value="${data.ruolo||''}"></div>
+      <div class="form-group"><label class="form-label">Ruolo / Titolo</label><input class="form-control" id="f-ruolo" placeholder="es. Agente, Responsabile..." value="${data.ruolo||''}" inputmode="text" enterkeyhint="done"></div>
       <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note" inputmode="text" enterkeyhint="done" rows="2">${data.note||''}</textarea></div>
       <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="saveOperatore()">💾 ${id?'Salva Modifiche':'Aggiungi Operatore'}</button>`;
   }
@@ -2762,7 +2762,7 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
             ${zoneEsistenti.map(z=>`<span class="op-tag" style="gap:5px">${z}<span class="op-tag-x" onclick="rimuoviZona('${z.replace(/'/g,"\\'")}')">×</span></span>`).join('')}
           </div>
           <div style="display:flex;gap:6px">
-            <input class="form-control" id="f-zona-input" placeholder="es. Milano, Navigli, Via Roma..." style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();aggiungiZona();}">
+            <input class="form-control" id="f-zona-input" placeholder="es. Milano, Navigli, Via Roma..." style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();aggiungiZona();}" inputmode="text" enterkeyhint="done">
             <button type="button" onclick="aggiungiZona()" style="background:rgba(200,169,110,0.2);border:1px solid rgba(200,169,110,0.4);color:var(--accent);border-radius:8px;padding:8px 14px;cursor:pointer;font-size:13px;font-family:'DM Sans',sans-serif;flex-shrink:0">+ Aggiungi</button>
           </div>
         </div>
@@ -2796,14 +2796,14 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
   else if(tipo==='acquirente' || tipo==='proprietario' || tipo==='altro') {
     html = `
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Nome</label><input class="form-control" id="f-nome" value="${data.nome||''}"></div>
-        <div class="form-group"><label class="form-label">Cognome</label><input class="form-control" id="f-cognome" value="${data.cognome||''}"></div>
+        <div class="form-group"><label class="form-label">Nome</label><input class="form-control" id="f-nome" value="${data.nome||''}" inputmode="text" enterkeyhint="done"></div>
+        <div class="form-group"><label class="form-label">Cognome</label><input class="form-control" id="f-cognome" value="${data.cognome||''}" inputmode="text" enterkeyhint="done"></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Email</label><input class="form-control" id="f-email" type="email" value="${data.email||''}"></div>
-        <div class="form-group"><label class="form-label">Telefono</label><input class="form-control" id="f-telefono" value="${data.telefono||''}"></div>
+        <div class="form-group"><label class="form-label">Telefono</label><input class="form-control" id="f-telefono" value="${data.telefono||''}" inputmode="text" enterkeyhint="done"></div>
       </div>
-      <div class="form-group"><label class="form-label">Città</label><input class="form-control" id="f-citta" value="${data.citta||''}"></div>
+      <div class="form-group"><label class="form-label">Città</label><input class="form-control" id="f-citta" value="${data.citta||''}" inputmode="text" enterkeyhint="done"></div>
       ${tipo==='acquirente' ? `
       <div class="form-row">
         <div class="form-group"><label class="form-label">Ruolo Cliente</label>
@@ -2812,9 +2812,9 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
             <option value="locatario" ${data.ruoloCliente==='locatario'?'selected':''}>🔑 Locatario</option>
           </select>
         </div>
-        <div class="form-group"><label class="form-label">Budget (€)</label><input class="form-control" id="f-budget" value="${data.budget||''}"></div>
+        <div class="form-group"><label class="form-label">Budget (€)</label><input class="form-control" id="f-budget" value="${data.budget||''}" inputmode="text" enterkeyhint="done"></div>
       </div>` : ''}
-      ${tipo==='altro' ? `<div class="form-group"><label class="form-label">Ruolo / Categoria</label><input class="form-control" id="f-ruolo" placeholder="es. Notaio, Banca, Geometra..." value="${data.ruolo||''}"></div>` : ''}
+      ${tipo==='altro' ? `<div class="form-group"><label class="form-label">Ruolo / Categoria</label><input class="form-control" id="f-ruolo" placeholder="es. Notaio, Banca, Geometra..." value="${data.ruolo||''}" inputmode="text" enterkeyhint="done"></div>` : ''}
       ${(tipo==='acquirente' || tipo==='proprietario') ? `
       <div style="background:rgba(200,169,110,0.07);border:1px solid rgba(200,169,110,0.2);border-radius:10px;padding:14px;margin-bottom:14px">
         <div style="color:var(--accent);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:12px">Adempimenti Obbligatori</div>
@@ -2839,7 +2839,7 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
     immOpIds = data.operatoriIds && data.operatoriIds.length ? data.operatoriIds :
       (data.proprietarioId ? (db.proprietari.find(p=>p.id===data.proprietarioId)||{}).operatoriIds||[] : []);
     html = `
-      <div class="form-group"><label class="form-label">Titolo</label><input class="form-control" id="f-titolo" value="${data.titolo||''}"></div>
+      <div class="form-group"><label class="form-label">Titolo</label><input class="form-control" id="f-titolo" value="${data.titolo||''}" inputmode="text" enterkeyhint="done"></div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Tipo</label>
           <select class="form-control" id="f-tipo">
@@ -2868,10 +2868,10 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
           <input type="date" class="form-control" id="f-fine-incarico" value="${data.fineIncarico||''}">
         </div>
       </div>
-      <div class="form-group"><label class="form-label">Indirizzo</label><input class="form-control" id="f-indirizzo" value="${data.indirizzo||''}"></div>
-      <div class="form-group"><label class="form-label">Città</label><input class="form-control" id="f-citta" value="${data.citta||''}"></div>
+      <div class="form-group"><label class="form-label">Indirizzo</label><input class="form-control" id="f-indirizzo" value="${data.indirizzo||''}" inputmode="text" enterkeyhint="done"></div>
+      <div class="form-group"><label class="form-label">Città</label><input class="form-control" id="f-citta" value="${data.citta||''}" inputmode="text" enterkeyhint="done"></div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Prezzo (€)</label><input class="form-control" id="f-prezzo" value="${data.prezzo||''}"></div>
+        <div class="form-group"><label class="form-label">Prezzo (€)</label><input class="form-control" id="f-prezzo" value="${data.prezzo||''}" inputmode="text" enterkeyhint="done"></div>
         <div class="form-group"><label class="form-label">Mq</label><input class="form-control" id="f-mq" type="number" value="${data.mq||''}"></div>
       </div>
       <div class="form-group"><label class="form-label">Locali</label><input class="form-control" id="f-locali" type="number" value="${data.locali||''}"></div>
@@ -2896,7 +2896,7 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
         </div>
         <div class="form-group"><label class="form-label">Data</label><input type="date" class="form-control" id="f-data" value="${today}"></div>
       </div>
-      <div class="form-group"><label class="form-label">Ora</label><input type="time" class="form-control" id="f-ora" value="09:00"></div>
+      <div class="form-group"><label class="form-label">Ora</label><input type="time" class="form-control" id="f-ora" value="09:00" inputmode="text" enterkeyhint="done"></div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Tipo Persona</label>
           <select class="form-control" id="f-persona-tipo" onchange="switchPersoneOpts()">
@@ -2911,10 +2911,10 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
           </select>
         </div>
       </div>
-      <div id="f-extra-durata" class="form-group" style="display:none"><label class="form-label">Durata</label><input class="form-control" id="f-durata" placeholder="es. 30 min"></div>
-      <div id="f-extra-orafine" class="form-group" style="display:none"><label class="form-label">Fino alle</label><input type="time" class="form-control" id="f-orafine"></div>
-      <div id="f-extra-oggetto" class="form-group" style="display:none"><label class="form-label">Testo / Oggetto</label><input class="form-control" id="f-oggetto"></div>
-      <div id="f-extra-luogo" class="form-group" style="display:none"><label class="form-label">Luogo</label><input class="form-control" id="f-luogo"></div>
+      <div id="f-extra-durata" class="form-group" style="display:none"><label class="form-label">Durata</label><input class="form-control" id="f-durata" placeholder="es. 30 min" inputmode="text" enterkeyhint="done"></div>
+      <div id="f-extra-orafine" class="form-group" style="display:none"><label class="form-label">Fino alle</label><input type="time" class="form-control" id="f-orafine" inputmode="text" enterkeyhint="done"></div>
+      <div id="f-extra-oggetto" class="form-group" style="display:none"><label class="form-label">Testo / Oggetto</label><input class="form-control" id="f-oggetto" inputmode="text" enterkeyhint="done"></div>
+      <div id="f-extra-luogo" class="form-group" style="display:none"><label class="form-label">Luogo</label><input class="form-control" id="f-luogo" inputmode="text" enterkeyhint="done"></div>
       <div class="form-group"><label class="form-label">Immobile di riferimento</label>
         <select class="form-control" id="f-immobile-id">
           <option value="">-- nessuno --</option>
