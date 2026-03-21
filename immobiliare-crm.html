@@ -121,8 +121,18 @@ window._firebaseReady = true;
     textarea.form-control { min-height: 80px; }
     .section-header { flex-wrap: wrap; gap: 12px; }
     .form-row { grid-template-columns: 1fr; }
-    .modal-box { max-height: 92vh; overflow-y: auto; -webkit-overflow-scrolling: touch; border-radius: 16px 16px 0 0; margin: 0; position: fixed; bottom: 0; left: 0; right: 0; width: 100%; }
-    #modal-overlay { align-items: flex-end; }
+    /* Android-friendly modal: centrato con scroll interno */
+    .modal-box {
+      min-width: calc(100vw - 32px);
+      max-width: calc(100vw - 32px);
+      max-height: 80vh;
+      margin: 16px;
+      padding: 20px;
+    }
+    .modal-overlay {
+      padding-top: 10vh;
+      align-items: flex-start;
+    }
   }
 
   /* CARDS */
@@ -188,12 +198,21 @@ window._firebaseReady = true;
   .modal-overlay {
     position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 500;
     display: none; align-items: center; justify-content: center;
+    /* Android: allow keyboard to push modal up */
+    align-items: flex-start;
+    padding-top: 5vh;
   }
   .modal-overlay.open { display: flex; }
   .modal-box {
     background: var(--card); border: 1px solid var(--border); border-radius: 16px;
-    padding: 32px; min-width: 480px; max-width: 600px; max-height: 85vh;
-    overflow-y: auto; position: relative;
+    padding: 32px; min-width: 480px; max-width: 600px;
+    /* Android: use max-height with vh that accounts for keyboard */
+    max-height: 90vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    position: relative;
+    /* Prevent Android from hiding content under keyboard */
+    margin-bottom: env(keyboard-inset-height, 0);
   }
   .modal-title { font-family: 'Playfair Display', serif; font-size: 18px; color: var(--accent); }
   .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
@@ -1177,9 +1196,36 @@ function focusNote() {
   }, 150);
 }
 
-// ─── Dictation: usa la dettatura nativa della tastiera ───
-function initMicButtons() { /* nessuna implementazione — usa il microfono della tastiera */ }
+// Stub: dictation handled natively by OS keyboard
+function initMicButtons() {}
 function toggleDictation() {}
+
+// ─── Android keyboard / Visual Viewport handling ───
+if(window.visualViewport) {
+  window.visualViewport.addEventListener('resize', () => {
+    const overlay = document.getElementById('modal-overlay');
+    if(!overlay || !overlay.classList.contains('open')) return;
+    // When keyboard opens, scroll focused textarea into view
+    const active = document.activeElement;
+    if(active && (active.tagName === 'TEXTAREA' || active.tagName === 'INPUT')) {
+      setTimeout(() => active.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+    }
+  });
+}
+
+// Ensure textarea tap opens keyboard with dictation available
+document.addEventListener('click', (e) => {
+  if(e.target.tagName === 'TEXTAREA') {
+    e.target.focus();
+    // Android: small delay then set cursor at end to ensure keyboard+mic appear
+    setTimeout(() => {
+      if(e.target === document.activeElement) {
+        const len = e.target.value.length;
+        e.target.setSelectionRange(len, len);
+      }
+    }, 100);
+  }
+});
 
 
 function badge(text, color) {
