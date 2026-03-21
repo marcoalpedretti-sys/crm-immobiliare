@@ -2,7 +2,13 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Immobilia CRM">
+<meta name="theme-color" content="#141414">
+<meta name="application-name" content="Immobilia CRM">
 <title>Immobilia CRM</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -49,7 +55,13 @@ window._firebaseReady = true;
     --sidebar-w: 220px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+  body {
+    background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh;
+    /* Android Chrome: prevent text size adjustment */
+    -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
+    /* Prevent pull-to-refresh interfering */
+    overscroll-behavior-y: contain;
+  }
 
   /* SIDEBAR */
   #sidebar {
@@ -57,6 +69,10 @@ window._firebaseReady = true;
     background: var(--card); border-right: 1px solid var(--border);
     padding: 32px 0; z-index: 200; transition: transform 0.3s ease;
     display: flex; flex-direction: column;
+    /* Smooth scroll on iOS/Android */
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
+    /* Safe area for notch devices */
+    padding-bottom: env(safe-area-inset-bottom, 0);
   }
   #sidebar.collapsed { transform: translateX(calc(-1 * var(--sidebar-w))); }
   .sidebar-logo { padding: 0 24px; margin-bottom: 40px; }
@@ -87,8 +103,27 @@ window._firebaseReady = true;
   #main {
     margin-left: var(--sidebar-w); padding: 40px 40px; min-height: 100vh;
     transition: margin-left 0.3s ease;
+    /* Smooth momentum scrolling */
+    -webkit-overflow-scrolling: touch;
+    /* Safe area for bottom bar (Android nav bar) */
+    padding-bottom: calc(40px + env(safe-area-inset-bottom, 0));
   }
   #main.expanded { margin-left: 0; padding-left: 40px; }
+
+  /* Larger touch targets for all buttons on mobile */
+  @media (max-width: 768px) {
+    #main { padding: 16px; margin-left: 0; }
+    .nav-btn { padding: 14px 24px; font-size: 15px; min-height: 48px; }
+    .btn, .btn-primary { min-height: 44px; }
+    .actions-toggle { min-width: 44px; min-height: 44px; }
+    .card { padding: 16px; }
+    .form-control { font-size: 16px !important; min-height: 44px; }
+    textarea.form-control { min-height: 80px; }
+    .section-header { flex-wrap: wrap; gap: 12px; }
+    .form-row { grid-template-columns: 1fr; }
+    .modal-box { max-height: 92vh; overflow-y: auto; -webkit-overflow-scrolling: touch; border-radius: 16px 16px 0 0; margin: 0; position: fixed; bottom: 0; left: 0; right: 0; width: 100%; }
+    #modal-overlay { align-items: flex-end; }
+  }
 
   /* CARDS */
   .card {
@@ -172,15 +207,26 @@ window._firebaseReady = true;
     padding: 8px 12px; color: var(--text); font-size: 16px; font-family: 'DM Sans', sans-serif;
     -webkit-user-select: text; user-select: text;
     touch-action: manipulation;
+    /* Prevent Android auto-zoom */
+    min-height: 44px;
   }
   .form-control:focus { outline: none; border-color: var(--accent); }
+
+  /* All buttons: minimum 44px touch target (Apple/Google HIG) */
+  button, .btn, .nav-btn, .actions-toggle, .mic-btn {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    cursor: pointer;
+  }
   textarea.form-control {
     resize: vertical;
     -webkit-user-select: text;
     user-select: text;
     touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
     font-size: 16px;
+    min-height: 80px;
+    /* Android: ensure keyboard shows with mic */
+    autocorrect: on;
   }
   .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
@@ -268,22 +314,15 @@ window._firebaseReady = true;
   .op-dropdown-item:hover { background:rgba(255,255,255,0.05); }
   .op-dropdown-item.selected { color:var(--accent); }
   .op-dropdown-item input { accent-color:var(--accent); width:15px; height:15px; cursor:pointer; }
-  #google-bar {
-    position: fixed; bottom: 0; left: var(--sidebar-w); right: 0; z-index: 100;
-    background: var(--card); border-top: 1px solid var(--border);
-    padding: 10px 24px; display: flex; align-items: center;
-    justify-content: space-between; gap: 16px;
-    transition: left 0.3s ease;
-  }
-  #main.expanded ~ #google-bar, body.sidebar-collapsed #google-bar { left: 0; }
-  #google-bar .gcal-info { display: flex; align-items: center; gap: 12px; }
-  #google-bar .gcal-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); flex-shrink:0; }
-  #google-bar .gcal-dot.connected { background: var(--green); }
-  #gcal-btn { background: var(--accent); border: none; color: var(--bg); border-radius: 8px; padding: 6px 14px; cursor: pointer; font-weight: 600; font-size: 12px; font-family: 'DM Sans', sans-serif; white-space:nowrap; }
-  #gcal-btn.disconnect { background: none; border: 1px solid var(--red); color: var(--red); }
-  #main { padding-bottom: 60px; }
 
-  @media (max-width: 768px) { .cal-grid.week { grid-template-columns: 36px repeat(7, 1fr); } .cal-event { font-size: 9px; } #google-bar { left: 0; } }
+  /* GCAL SIDEBAR WIDGET */
+  #gcal-sidebar { padding: 12px 16px; border-top: 1px solid var(--border); margin-top: 8px; }
+  #gcal-sidebar .gcal-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); display:inline-block; margin-right:6px; flex-shrink:0; }
+  #gcal-sidebar .gcal-dot.connected { background: var(--green); }
+  #gcal-btn { width:100%; background: rgba(200,169,110,0.15); border: 1px solid rgba(200,169,110,0.4); color: var(--accent); border-radius: 8px; padding: 8px 10px; cursor: pointer; font-weight: 600; font-size: 12px; font-family: 'DM Sans', sans-serif; margin-top:8px; }
+  #gcal-btn.disconnect { background: none; border: 1px solid var(--red); color: var(--red); }
+
+  @media (max-width: 768px) { .cal-grid.week { grid-template-columns: 36px repeat(7, 1fr); } .cal-event { font-size: 9px; } }
 
   /* DASHBOARD BACK BUTTON */
   .btn-dashboard {
@@ -350,6 +389,17 @@ window._firebaseReady = true;
   <div style="margin-top:auto; padding: 0 24px 16px; display:flex; flex-direction:column; gap:8px;">
     <button class="nav-btn" style="padding:10px 0; font-size:12px;" onclick="showPage('database')">🗄️ &nbsp;Database</button>
     <button class="nav-btn" style="padding:10px 0; font-size:12px;" onclick="showPage('impostazioni')">⚙️ &nbsp;Impostazioni</button>
+    <button class="nav-btn" style="padding:10px 0; font-size:12px;" onclick="crmLogout()">🚪 &nbsp;Esci</button>
+  </div>
+  <!-- Google Calendar + Sync in sidebar -->
+  <div id="gcal-sidebar">
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+      <span class="gcal-dot" id="gcal-dot"></span>
+      <span style="font-size:12px;font-weight:600;color:var(--text)" id="gcal-status-text">Google Calendar</span>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:6px" id="gcal-user-text">Non connesso</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:6px" id="sync-status">☁️ Connessione cloud...</div>
+    <button id="gcal-btn" onclick="handleGCalAuth()">🔗 Connetti Google Calendar</button>
   </div>
 </aside>
 
@@ -735,21 +785,6 @@ window._firebaseReady = true;
 
 </div><!-- /main -->
 
-<!-- GOOGLE BAR — barra fissa in basso -->
-<div id="google-bar">
-  <div class="gcal-info">
-    <div class="gcal-dot" id="gcal-dot"></div>
-    <div>
-      <div style="font-size:13px;font-weight:600" id="gcal-status-text">Google Calendar non connesso</div>
-      <div style="font-size:11px;color:var(--muted)" id="gcal-user-text">Connetti per sincronizzare appuntamenti</div>
-    </div>
-  </div>
-  <div style="display:flex;align-items:center;gap:12px">
-    <span id="sync-status" style="font-size:11px;color:var(--muted)">☁️ Connessione cloud...</span>
-    <button onclick="crmLogout()" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11px;font-family:'DM Sans',sans-serif" title="Esci">🚪 Esci</button>
-    <button id="gcal-btn" onclick="handleGCalAuth()">🔗 Connetti Google Calendar</button>
-  </div>
-</div>
 
 </div><!-- /main-app -->
 
@@ -2100,7 +2135,7 @@ function editAttivita(id) {
       </select>
     </div>
     <div class="form-group"><label class="form-label">Note</label>
-      <textarea class="form-control" id="f-note" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true" rows="3">${a.note||''}</textarea>
+      <textarea class="form-control" id="f-note" rows="3" autocomplete="on" autocorrect="on" autocapitalize="sentences" spellcheck="true">${a.note||''}</textarea>
     </div>
     ${db.operatori && db.operatori.length ? `<div class="form-group"><label class="form-label">👨‍💼 Operatori</label><div class="op-select" id="op-sel-attivita"></div></div>` : ''}
     <div id="gcal-note" style="display:none;background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.3);border-radius:8px;padding:10px;margin-bottom:14px;font-size:12px;color:#60a5fa">
@@ -2272,7 +2307,7 @@ function nuovaTrattativa(immobileId) {
     <div style="margin-bottom:16px;font-size:14px;color:var(--muted)">Immobile: <strong style="color:var(--text)">${imm ? imm.titolo : ''}</strong></div>
     <div class="form-group"><label class="form-label">Cliente</label><select class="form-control" id="f-sel-cliente">${acqOpts}</select></div>
     <div class="form-group"><label class="form-label">Data</label><input type="date" class="form-control" id="f-sel-data" value="${new Date().toISOString().slice(0,10)}"></div>
-    <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-sel-note" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true" rows="3" placeholder="Note trattativa..." style="resize:vertical"></textarea></div>
+    <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-sel-note" rows="3" placeholder="Note trattativa..." style="resize:vertical" autocomplete="on" autocorrect="on" autocapitalize="sentences" spellcheck="true"></textarea></div>
     <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="salvaTrattativa()">💾 Aggiungi Trattativa</button>
   `;
   document.getElementById('modal-overlay').classList.add('open');
@@ -2294,7 +2329,7 @@ function modificaTrattativa(trattId) {
     <div style="margin-bottom:16px;font-size:14px;color:var(--muted)">Immobile: <strong style="color:var(--text)">${imm ? imm.titolo : ''}</strong></div>
     <div class="form-group"><label class="form-label">Cliente</label><select class="form-control" id="f-sel-cliente">${acqOpts}</select></div>
     <div class="form-group"><label class="form-label">Data</label><input type="date" class="form-control" id="f-sel-data" value="${t.data||''}"></div>
-    <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-sel-note" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true" rows="3" style="resize:vertical">${t.note||''}</textarea></div>
+    <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-sel-note" rows="3" style="resize:vertical" autocomplete="on" autocorrect="on" autocapitalize="sentences" spellcheck="true">${t.note||''}</textarea></div>
     <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="salvaTrattativa()">💾 Salva Modifiche</button>
   `;
   document.getElementById('modal-overlay').classList.add('open');
@@ -2766,7 +2801,7 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
         <div class="form-group"><label class="form-label">Telefono</label><input class="form-control" id="f-telefono" value="${data.telefono||''}" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true"></div>
       </div>
       <div class="form-group"><label class="form-label">Ruolo / Titolo</label><input class="form-control" id="f-ruolo" placeholder="es. Agente, Responsabile..." value="${data.ruolo||''}" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true"></div>
-      <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true" rows="2">${data.note||''}</textarea></div>
+      <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note" rows="2" autocomplete="on" autocorrect="on" autocapitalize="sentences" spellcheck="true">${data.note||''}</textarea></div>
       <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="saveOperatore()">💾 ${id?'Salva Modifiche':'Aggiungi Operatore'}</button>`;
   }
   else if(tipo==='richiesta') {
@@ -2811,7 +2846,7 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
         <div class="form-group"><label class="form-label">Locali min</label><input class="form-control" id="f-locali-min" type="number" value="${data.localiMin||''}"></div>
         <div class="form-group"><label class="form-label">Mq min</label><input class="form-control" id="f-mq-min" type="number" value="${data.mqMin||''}"></div>
       </div>
-      <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true" rows="2">${data.note||''}</textarea></div>
+      <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note" rows="2" autocomplete="on" autocorrect="on" autocapitalize="sentences" spellcheck="true">${data.note||''}</textarea></div>
       <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="saveRichiesta()">💾 ${id?'Salva Modifiche':'Aggiungi Richiesta'}</button>`;
   }
   else if(tipo==='acquirente' || tipo==='proprietario' || tipo==='altro') {
@@ -2850,7 +2885,7 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
           </label>
         </div>
       </div>` : ''}
-      <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true" rows="3">${data.note||''}</textarea></div>
+      <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note" rows="3" autocomplete="on" autocorrect="on" autocapitalize="sentences" spellcheck="true">${data.note||''}</textarea></div>
       ${db.operatori && db.operatori.length ? `<div class="form-group"><label class="form-label">👨‍💼 Operatori</label><div class="op-select" id="op-sel-persona"></div></div>` : ''}
       <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="savePersona()">💾 ${id?'Salva Modifiche':'Aggiungi'}</button>`;
   }
@@ -2898,7 +2933,7 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
       <div class="form-group"><label class="form-label">Locali</label><input class="form-control" id="f-locali" type="number" value="${data.locali||''}"></div>
       <div class="form-group"><label class="form-label">Proprietario</label><select class="form-control" id="f-proprietario">${propOpts}</select></div>
       ${db.operatori && db.operatori.length ? `<div class="form-group"><label class="form-label">👨‍💼 Operatori</label><div class="op-select" id="op-sel-immobile"></div></div>` : ''}
-      <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note-imm" rows="3" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true" style="resize:vertical">${data.note||''}</textarea></div>
+      <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note-imm" rows="3" style="resize:vertical" autocomplete="on" autocorrect="on" autocapitalize="sentences" spellcheck="true">${data.note||''}</textarea></div>
       <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="saveImmobile()">💾 ${id?'Salva Modifiche':'Aggiungi'}</button>`;
   }
   else if(tipo==='attivita') {
@@ -2942,7 +2977,7 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
           ${db.immobili.map(i=>`<option value="${i.id}">${i.titolo}${i.contratto?' ('+i.contratto+')':''}</option>`).join('')}
         </select>
       </div>
-      <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note" inputmode="text" enterkeyhint="done" autocorrect="on" autocapitalize="sentences" spellcheck="true" rows="3"></textarea></div>
+      <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note" rows="3" autocomplete="on" autocorrect="on" autocapitalize="sentences" spellcheck="true"></textarea></div>
       ${db.operatori && db.operatori.length ? `<div class="form-group"><label class="form-label">👨‍💼 Operatori</label><div class="op-select" id="op-sel-attivita"></div></div>` : ''}
       <div id="gcal-note" style="display:none;background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.3);border-radius:8px;padding:10px;margin-bottom:14px;font-size:12px;color:#60a5fa">
         📅 L'appuntamento verrà salvato e potrai aggiungerlo a Google Calendar dopo
