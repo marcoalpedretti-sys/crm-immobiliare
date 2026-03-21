@@ -1571,6 +1571,11 @@ function renderRichieste() {
           <div class="card-header">
             <div style="flex:1">
               <div class="card-name">${acq ? acq.nome+' '+acq.cognome : '—'}</div>
+              ${acq ? `<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:4px">
+                ${acq.telefono ? `<a href="tel:${acq.telefono}" style="color:var(--muted);font-size:12px;text-decoration:none" onclick="event.stopPropagation()">📞 ${acq.telefono}</a>${waLink(acq.telefono)}` : ''}
+                ${acq.email ? `<a href="https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(acq.email)}" target="_blank" style="color:var(--muted);font-size:12px;text-decoration:none" onclick="event.stopPropagation()">✉️ ${acq.email}</a>` : ''}
+                ${acq.citta ? `<span style="color:var(--muted);font-size:12px">📍 ${acq.citta}</span>` : ''}
+              </div>` : ''}
               <div style="display:flex;gap:14px;margin-top:8px;flex-wrap:wrap">
                 ${r.zoneDesiderate && r.zoneDesiderate.length
                 ? `<div style="display:flex;flex-wrap:wrap;gap:5px">${r.zoneDesiderate.map(z=>`<span style="background:rgba(200,169,110,0.12);border:1px solid rgba(200,169,110,0.35);color:var(--accent);border-radius:20px;padding:2px 8px;font-size:11px">📍 ${z}</span>`).join('')}</div>`
@@ -1582,6 +1587,7 @@ function renderRichieste() {
                 ${r.contratto ? `<span style="color:var(--blue);font-size:12px">${r.contratto}</span>` : ''}
               </div>
               ${r.note ? `<div class="card-note" style="margin-top:6px">"${r.note}"</div>` : ''}
+              ${r.dataInserimento ? `<div style="margin-top:6px;font-size:11px;color:var(--muted)">🗓 Inserito: ${r.dataInserimento}</div>` : ''}
             </div>
             <div class="actions-wrap">
               <button class="actions-toggle" onclick="toggleDropdown('dd-rich-${r.id}')">⋯</button>
@@ -2614,6 +2620,7 @@ function immobileCard(i, isInatt = false) {
         </div>
         ${isInatt && i.fineIncarico ? `<div style="margin-top:5px;font-size:12px;color:var(--muted)">📅 Dal: <strong style="color:var(--text)">${i.fineIncarico}</strong></div>` : ''}
         ${!isInatt && i.fineIncarico ? `<div style="margin-top:4px;font-size:12px;color:${isIncaricoScaduto(i.fineIncarico)?'#f87171':'#fb923c'}">⏳ Data incarico: ${i.fineIncarico}${isIncaricoScaduto(i.fineIncarico)?' · <strong>SCADUTO</strong>':''}</div>` : ''}
+        ${i.dataInserimento ? `<div style="margin-top:4px;font-size:11px;color:var(--muted)">🗓 Inserito: ${i.dataInserimento}</div>` : ''}
         <div style="margin-top:8px;display:flex;gap:16px;flex-wrap:wrap;align-items:center">
           ${prop ? `<span style="color:var(--muted);font-size:12px">👤 Proprietario: <span style="color:#60a5fa">${prop.nome} ${prop.cognome}</span></span>` : ''}
           ${acq ? `<span style="color:var(--muted);font-size:12px">🤝 Cliente: <span style="color:#4ade80">${acq.nome} ${acq.cognome}</span></span>` : ''}
@@ -2893,6 +2900,7 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
         <div class="form-group"><label class="form-label">Mq min</label><input class="form-control" id="f-mq-min" type="number" value="${data.mqMin||''}"></div>
       </div>
       <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note" rows="2" autocomplete="on" autocorrect="on" autocapitalize="sentences" spellcheck="true">${data.note||''}</textarea></div>
+      <div class="form-group"><label class="form-label">📅 Data inserimento</label><input type="date" class="form-control" id="f-data-ins-rich" value="${data.dataInserimento||new Date().toISOString().slice(0,10)}"></div>
       <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="saveRichiesta()">💾 ${id?'Salva Modifiche':'Aggiungi Richiesta'}</button>`;
   }
   else if(tipo==='acquirente' || tipo==='proprietario' || tipo==='altro') {
@@ -2980,6 +2988,7 @@ function openModal(tipo, id=null, prePersonaTipo=null, prePersonaId=null) {
       <div class="form-group"><label class="form-label">Proprietario</label><select class="form-control" id="f-proprietario">${propOpts}</select></div>
       ${db.operatori && db.operatori.length ? `<div class="form-group"><label class="form-label">👨‍💼 Operatori</label><div class="op-select" id="op-sel-immobile"></div></div>` : ''}
       <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="f-note-imm" rows="3" style="resize:vertical" autocomplete="on" autocorrect="on" autocapitalize="sentences" spellcheck="true">${data.note||''}</textarea></div>
+      <div class="form-group"><label class="form-label">📅 Data inserimento</label><input type="date" class="form-control" id="f-data-ins-imm" value="${data.dataInserimento||new Date().toISOString().slice(0,10)}"></div>
       <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="saveImmobile()">💾 ${id?'Salva Modifiche':'Aggiungi'}</button>`;
   }
   else if(tipo==='attivita') {
@@ -3254,6 +3263,9 @@ function saveImmobile() {
     proprietarioId: parseInt(g('f-proprietario'))||null,
     operatoriIds: getOpSelectIds('op-sel-immobile'),
     note: (document.getElementById('f-note-imm')||{}).value || '',
+    dataInserimento: document.getElementById('f-data-ins-imm')?.value ||
+      (editingId ? (db.immobili.find(i=>i.id===editingId)||{}).dataInserimento : null) ||
+      new Date().toISOString().slice(0,10),
   };
 
   let savedId = editingId;
@@ -3328,8 +3340,13 @@ function saveRichiesta() {
     mqMin: document.getElementById('f-mq-min').value.trim(),
     contratto: document.getElementById('f-contr-rich').value,
     note: g('f-note'),
+    dataInserimento: document.getElementById('f-data-ins-rich')?.value || new Date().toISOString().slice(0,10),
   };
-  if(editingId) { db.richieste = db.richieste.map(r => r.id===editingId ? {...r,...obj} : r); }
+  if(editingId) {
+    const prev = db.richieste.find(r => r.id===editingId) || {};
+    obj.dataInserimento = obj.dataInserimento || prev.dataInserimento || new Date().toISOString().slice(0,10);
+    db.richieste = db.richieste.map(r => r.id===editingId ? {...r,...obj} : r);
+  }
   else { obj.id = nextId(db.richieste); db.richieste.push(obj); }
   saveDb();
   document.getElementById('modal-overlay').classList.remove('open');
