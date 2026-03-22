@@ -718,6 +718,18 @@ window._firebaseReady = true;
         <button class="btn btn-primary" onclick="openModal('attivita')">+ Nuova Attività</button>
       </div>
     </div>
+    <!-- Barra ricerca -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+      <div class="form-group" style="margin:0;flex:1;min-width:180px">
+        <label class="form-label">Nome / Cognome</label>
+        <input class="form-control" id="search-att-nome" placeholder="es. Rossi" oninput="renderAttivita()">
+      </div>
+      <div class="form-group" style="margin:0;flex:1;min-width:160px">
+        <label class="form-label">Telefono</label>
+        <input class="form-control" id="search-att-tel" placeholder="es. 333..." oninput="renderAttivita()">
+      </div>
+      <button class="btn-sm" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:8px 14px;cursor:pointer;font-family:'DM Sans',sans-serif" onclick="resetFiltri('attivita')">✕ Reset</button>
+    </div>
     <!-- Riquadri filtro cliccabili -->
     <div id="act-badges" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:24px"></div>
     <div id="list-attivita"></div>
@@ -1808,12 +1820,14 @@ function resetFiltri(tipo) {
     operatori:   ['search-operatori','search-op-tel'],
     altri:       ['search-altri','search-altri-tel','search-altri-citta'],
     immobili:    ['search-immobili','search-imm-prop','search-imm-tel','search-imm-locali','search-imm-pmin','search-imm-pmax'],
+    attivita:    ['search-att-nome','search-att-tel'],
   };
   (ids[tipo]||[]).forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
   if(tipo === 'acquirenti' || tipo === 'proprietari') renderPersone(tipo);
   else if(tipo === 'operatori') renderOperatori();
   else if(tipo === 'altri') renderAltri();
   else if(tipo === 'immobili') renderImmobili();
+  else if(tipo === 'attivita') renderAttivita();
 }
 
 function matchRichieste() {
@@ -2766,8 +2780,29 @@ function renderAttivita() {
 
   const icons = { telefonata:'📞', messaggio:'💬', appuntamento:'📅' };
 
+  // Leggi filtri ricerca
+  const qNome = (document.getElementById('search-att-nome')||{}).value?.toLowerCase() || '';
+  const qTel  = (document.getElementById('search-att-tel')||{}).value?.toLowerCase() || '';
+
   document.getElementById('list-attivita').innerHTML = tipiDaMostrare.map(tipo => {
-    const lista = db.attivita.filter(a => a.tipo === tipo);
+    let lista = db.attivita.filter(a => a.tipo === tipo);
+
+    // Applica filtri nome/telefono
+    if(qNome || qTel) {
+      lista = lista.filter(a => {
+        const p = getPersona(a.personaTipo, a.personaId);
+        if(qNome && (!p || !`${p.nome} ${p.cognome}`.toLowerCase().includes(qNome))) return false;
+        if(qTel  && (!p || !(p.telefono||'').toLowerCase().includes(qTel))) return false;
+        return true;
+      });
+    }
+
+    // Ordina dal più recente al meno recente
+    lista = lista.slice().sort((a, b) => {
+      const da = (a.data||'0000-00-00') + (a.ora||'00:00');
+      const db2 = (b.data||'0000-00-00') + (b.ora||'00:00');
+      return da < db2 ? 1 : da > db2 ? -1 : 0;
+    });
     const rows = lista.map(a => {
       const p = getPersona(a.personaTipo, a.personaId);
       const imm = db.immobili.find(i => i.id === a.immobileId);
