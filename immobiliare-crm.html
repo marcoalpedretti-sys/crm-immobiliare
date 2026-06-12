@@ -40,6 +40,7 @@ window._onSnapshot = onSnapshot;
 window._firebaseReady = true;
 </script>
 <style>
+  /* ── TEMA NOTTE (default) ── */
   :root {
     --bg: #0a0a0f;
     --card: #12121a;
@@ -53,7 +54,56 @@ window._firebaseReady = true;
     --orange: #fb923c;
     --red: #f87171;
     --sidebar-w: 220px;
+    /* workflow palette (notte) */
+    --wf-ink: #e8e0d0;
+    --wf-paper: #12121a;
+    --wf-cream: #1a1a28;
+    --wf-line: rgba(200,169,110,0.15);
+    --wf-shadow: rgba(0,0,0,0.4);
+    --wf-slate: #9090b0;
+    --wf-rust: #e87858;
+    --wf-sage: #6aaa6e;
+    --wf-gold: #c8a96e;
+    --wf-gold-light: rgba(200,169,110,0.25);
   }
+  /* ── TEMA GIORNO ── */
+  html.theme-day {
+    --bg: #f5f0e8;
+    --card: #ede8dc;
+    --border: rgba(26,18,8,0.12);
+    --accent: #c9a84c;
+    --accent2: #e8d49a;
+    --text: #1a1208;
+    --muted: #4a5568;
+    --green: #5c7a5f;
+    --blue: #3a6a9a;
+    --orange: #b85c38;
+    --red: #b85c38;
+    --sidebar-w: 220px;
+    /* workflow palette (giorno) */
+    --wf-ink: #1a1208;
+    --wf-paper: #f5f0e8;
+    --wf-cream: #ede8dc;
+    --wf-line: rgba(26,18,8,0.12);
+    --wf-shadow: rgba(26,18,8,0.15);
+    --wf-slate: #4a5568;
+    --wf-rust: #b85c38;
+    --wf-sage: #5c7a5f;
+    --wf-gold: #c9a84c;
+    --wf-gold-light: #e8d49a;
+  }
+  /* ── THEME TOGGLE BUTTON ── */
+  #theme-toggle {
+    position: fixed; top: 16px; right: 16px; z-index: 1000;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 24px; padding: 6px 14px 6px 10px;
+    color: var(--text); cursor: pointer; font-family: 'DM Sans', sans-serif;
+    font-size: 12px; font-weight: 600; letter-spacing: 0.05em;
+    display: flex; align-items: center; gap: 7px;
+    transition: all 0.25s; box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+  #theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+  #theme-toggle .toggle-icon { font-size: 15px; line-height: 1; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh;
@@ -362,10 +412,175 @@ window._firebaseReady = true;
     .two-col { grid-template-columns: 1fr; }
     .form-row { grid-template-columns: 1fr; }
     .modal-box { min-width: 90vw; }
+    .import-grid { grid-template-columns: 1fr !important; }
   }
+
+  /* ── TEMA GIORNO ── */
+  html.theme-day {
+    --bg: #f5f0e8;
+    --card: #ede8dc;
+    --border: rgba(26,18,8,0.13);
+    --accent: #c9a84c;
+    --accent2: #e8d49a;
+    --text: #1a1208;
+    --muted: #4a5568;
+    --green: #5c7a5f;
+    --blue: #3a6a9a;
+    --orange: #b85c38;
+    --red: #b85c38;
+    --sidebar-w: 220px;
+  }
+  html.theme-day body { background: var(--bg); color: var(--text); }
+  html.theme-day #sidebar { background: var(--card); border-color: var(--border); }
+  html.theme-day .sidebar-logo small { color: var(--muted); }
+  html.theme-day .nav-btn { color: var(--muted); }
+  html.theme-day .nav-btn:hover { color: var(--accent); background: rgba(201,168,76,0.10); }
+  html.theme-day .nav-btn.active { color: var(--accent); background: rgba(201,168,76,0.16); border-left-color: var(--accent); }
+  html.theme-day .card, html.theme-day .col-card, html.theme-day .stat-card { background: var(--card); border-color: var(--border); color: var(--text); }
+  html.theme-day .card:hover { border-color: rgba(201,168,76,0.5); }
+  html.theme-day .card-name { color: var(--text); }
+  html.theme-day .card-sub, html.theme-day .card-note { color: var(--muted); }
+  html.theme-day .section-title { color: var(--text); }
+  html.theme-day .section-sub { color: var(--muted); }
+  html.theme-day .stat-value { color: var(--text); }
+  html.theme-day .stat-label { color: var(--muted); }
+  html.theme-day .stat-card-link:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.1); }
+  html.theme-day .form-control { background: #fff; border-color: var(--border); color: var(--text); }
+  html.theme-day .form-control:focus { border-color: var(--accent); }
+  html.theme-day .form-label { color: var(--muted); }
+  html.theme-day .modal-overlay { background: rgba(0,0,0,0.35); }
+  html.theme-day .modal-box { background: var(--card); border-color: var(--border); }
+  html.theme-day .modal-title { color: var(--accent); }
+  html.theme-day .modal-close { color: var(--muted); }
+  html.theme-day #toggle-sidebar { background: var(--card); border-color: var(--border); color: var(--muted); }
+  html.theme-day #toggle-sidebar:hover { background: rgba(201,168,76,0.15); }
+  html.theme-day .actions-dropdown { background: var(--card); border-color: var(--border); }
+  html.theme-day .actions-dropdown button { color: var(--text); }
+  html.theme-day .actions-toggle { color: var(--muted); border-color: var(--border) !important; }
+  html.theme-day .activity-row { background: rgba(26,18,8,0.05); }
+  html.theme-day .btn-dashboard { color: var(--muted); border-color: var(--border); }
+  html.theme-day .btn-dashboard:hover { color: var(--accent); border-color: var(--accent); background: rgba(201,168,76,0.1); }
+  html.theme-day #config-panel { background: rgba(201,168,76,0.08); border-color: rgba(201,168,76,0.3); }
+  html.theme-day .cal-header { background: var(--card); color: var(--text); }
+  html.theme-day .cal-wrap { background: var(--border); }
+  html.theme-day .cal-times { background: var(--card); }
+  html.theme-day .cal-hour-label { color: var(--muted); border-color: var(--border); }
+  html.theme-day .cal-hour-row { background: var(--card); border-color: var(--border); }
+  html.theme-day .cal-view-btn { background: none; border-color: var(--border); color: var(--muted); }
+  html.theme-day .cal-view-btn.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  html.theme-day #gcal-sidebar { border-color: var(--border); }
+  html.theme-day #toast { background: var(--green); color: #fff; }
+  html.theme-day .badge { color: #fff; }
+  html.theme-day .btn-sm.btn-edit { color: var(--accent); }
+  html.theme-day .btn-sm.btn-del { color: var(--red); }
+  html.theme-day .btn-sm.btn-expand { color: var(--muted); border-color: var(--border) !important; }
+  html.theme-day .att-popup-box,
+  html.theme-day #att-popup-box { background: var(--card); border-color: var(--border); }
+
+  /* ── THEME TOGGLE BUTTON ── */
+  #theme-toggle {
+    position: fixed; top: 14px; right: 16px; z-index: 1000;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 24px; padding: 6px 14px 6px 10px;
+    color: var(--text); cursor: pointer; font-family: 'DM Sans', sans-serif;
+    font-size: 12px; font-weight: 600; letter-spacing: 0.04em;
+    display: flex; align-items: center; gap: 7px;
+    transition: all 0.25s; box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  }
+  #theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+  #theme-toggle .ti { font-size: 14px; line-height: 1; }
+
+  /* ── WORKFLOW PAGE ── */
+  #page-workflow { --wf-serif: 'Playfair Display', serif; --wf-mono: 'DM Mono', monospace; }
+  /* Workflow uses CSS variables that shift with theme */
+  :root {
+    --wf-ink: #e8e0d0; --wf-paper: #12121a; --wf-cream: #1a1a28;
+    --wf-line: rgba(200,169,110,0.15); --wf-shadow: rgba(0,0,0,0.4);
+    --wf-slate: #9090b0; --wf-rust: #e87858; --wf-sage: #6aaa6e;
+    --wf-gold: #c8a96e; --wf-gold-light: rgba(200,169,110,0.25);
+  }
+  html.theme-day {
+    --wf-ink: #1a1208; --wf-paper: #f5f0e8; --wf-cream: #ede8dc;
+    --wf-line: rgba(26,18,8,0.12); --wf-shadow: rgba(26,18,8,0.15);
+    --wf-slate: #4a5568; --wf-rust: #b85c38; --wf-sage: #5c7a5f;
+    --wf-gold: #c9a84c; --wf-gold-light: #e8d49a;
+  }
+  #page-workflow .wf-progress-wrap {
+    position: sticky; top: 0; z-index: 10;
+    background: var(--wf-paper); border-bottom: 1px solid var(--wf-line);
+    margin: -8px -40px 28px; padding: 10px 40px;
+    display: flex; align-items: center; gap: 14px; transition: background 0.3s;
+  }
+  @media (max-width: 768px) { #page-workflow .wf-progress-wrap { margin: -8px -16px 20px; padding: 10px 16px; } }
+  #page-workflow .wf-progress-label {
+    font-family: var(--wf-mono); font-size: 10px; letter-spacing: 0.15em;
+    text-transform: uppercase; color: var(--wf-slate); white-space: nowrap;
+  }
+  #page-workflow .wf-bar-outer { flex: 1; height: 3px; background: var(--wf-line); border-radius: 2px; overflow: hidden; }
+  #page-workflow .wf-bar-inner {
+    height: 100%; background: linear-gradient(90deg, var(--wf-rust), var(--wf-gold));
+    border-radius: 2px; transition: width 0.4s ease; width: 0%;
+  }
+  #page-workflow .wf-pct { font-family: var(--wf-mono); font-size: 11px; font-weight: 500; color: var(--wf-gold); min-width: 36px; text-align: right; }
+  #page-workflow .wf-stats-strip {
+    display: flex; justify-content: center; gap: 36px; margin-bottom: 36px;
+    padding: 18px; flex-wrap: wrap; background: var(--wf-cream); border: 1px solid var(--wf-line); border-radius: 2px;
+  }
+  #page-workflow .wf-stat { text-align: center; }
+  #page-workflow .wf-stat-num { font-family: var(--wf-serif); font-size: 26px; font-weight: 700; color: var(--wf-rust); line-height: 1; margin-bottom: 4px; }
+  #page-workflow .wf-stat-label { font-family: var(--wf-mono); font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--wf-slate); font-weight: 400; }
+  #page-workflow .wf-section-label { font-family: var(--wf-mono); font-size: 9px; letter-spacing: 0.25em; text-transform: uppercase; color: var(--wf-slate); margin-bottom: 18px; margin-top: 6px; }
+  #page-workflow .wf-fase { margin-bottom: 30px; }
+  #page-workflow .wf-fase-header { display: flex; align-items: baseline; gap: 14px; margin-bottom: 14px; flex-wrap: wrap; }
+  #page-workflow .wf-fase-time { font-family: var(--wf-mono); font-size: 11px; font-weight: 500; letter-spacing: 0.1em; color: var(--wf-gold); white-space: nowrap; flex-shrink: 0; }
+  #page-workflow .wf-fase-title { font-family: var(--wf-serif); font-size: 18px; font-weight: 700; color: var(--wf-ink); flex: 1; }
+  #page-workflow .wf-fase-badge { font-family: var(--wf-mono); font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; padding: 3px 8px; border-radius: 2px; flex-shrink: 0; }
+  #page-workflow .wf-badge-core   { background: var(--wf-rust); color: #fff; }
+  #page-workflow .wf-badge-field  { background: var(--wf-sage); color: #fff; }
+  #page-workflow .wf-badge-admin  { background: var(--wf-slate); color: #fff; }
+  #page-workflow .wf-badge-strategy { background: var(--wf-gold); color: var(--wf-ink); }
+  #page-workflow .wf-fase-body { border-left: 2px solid var(--wf-gold-light); padding-left: 20px; }
+  #page-workflow .wf-task-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  #page-workflow .wf-task-item {
+    display: flex; gap: 12px; align-items: flex-start; padding: 10px 14px;
+    background: var(--wf-cream); border: 1px solid var(--wf-line); border-radius: 2px;
+    transition: background 0.2s, border-color 0.2s; cursor: default;
+  }
+  #page-workflow .wf-task-item:hover { background: var(--card); border-color: var(--wf-gold-light); }
+  #page-workflow .wf-check {
+    width: 16px; height: 16px; border: 1.5px solid var(--wf-gold); border-radius: 2px;
+    flex-shrink: 0; margin-top: 2px; position: relative; cursor: pointer; transition: all 0.2s;
+  }
+  #page-workflow .wf-check.done { background: var(--wf-sage); border-color: var(--wf-sage); }
+  #page-workflow .wf-check.done::after { content: '✓'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 10px; font-weight: 700; }
+  #page-workflow .wf-task-text { font-size: 13.5px; line-height: 1.55; color: var(--wf-ink); font-weight: 400; }
+  #page-workflow .wf-task-text strong { font-weight: 500; color: var(--wf-rust); }
+  #page-workflow .wf-task-text .wf-tip { display: block; font-size: 11px; color: var(--wf-slate); font-weight: 300; margin-top: 2px; font-style: italic; }
+  #page-workflow .wf-task-item.done-item .wf-task-text { opacity: 0.45; text-decoration: line-through; }
+  #page-workflow .wf-divider { display: flex; align-items: center; gap: 12px; margin: 22px 0; }
+  #page-workflow .wf-divider::before, #page-workflow .wf-divider::after { content: ''; flex: 1; height: 1px; background: var(--wf-line); }
+  #page-workflow .wf-diamond { width: 6px; height: 6px; background: var(--wf-gold); transform: rotate(45deg); flex-shrink: 0; }
+  #page-workflow .wf-tip-block { background: var(--wf-cream); border: 1px solid var(--wf-line); border-left: 3px solid var(--wf-rust); padding: 12px 16px; margin-top: 12px; border-radius: 0 2px 2px 0; }
+  #page-workflow .wf-tip-block .wf-tip-title { font-family: var(--wf-mono); font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--wf-rust); font-weight: 500; margin-bottom: 6px; }
+  #page-workflow .wf-tip-block p { font-size: 12.5px; line-height: 1.6; color: var(--wf-slate); font-style: italic; }
+  #page-workflow .wf-kpi-box { background: var(--wf-ink); color: var(--wf-paper); padding: 22px 26px; border-radius: 2px; margin: 36px 0 26px; position: relative; overflow: hidden; }
+  #page-workflow .wf-kpi-box::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--wf-rust), var(--wf-gold), var(--wf-sage)); }
+  #page-workflow .wf-kpi-box h3 { font-family: var(--wf-serif); font-size: 15px; font-weight: 700; margin-bottom: 18px; color: var(--wf-gold); font-style: italic; }
+  #page-workflow .wf-kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; }
+  #page-workflow .wf-kpi-item { text-align: center; padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 2px; }
+  #page-workflow .wf-kpi-item .wf-num { font-family: var(--wf-serif); font-size: 24px; font-weight: 700; color: var(--wf-gold); line-height: 1; margin-bottom: 5px; }
+  #page-workflow .wf-kpi-item .wf-label { font-family: var(--wf-mono); font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(245,240,232,0.6); font-weight: 400; }
+  #page-workflow .wf-reset-btn { display: block; margin: 28px auto 0; padding: 9px 28px; background: transparent; border: 1px solid var(--wf-gold); color: var(--wf-gold); font-family: var(--wf-mono); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; border-radius: 2px; transition: all 0.2s; }
+  #page-workflow .wf-reset-btn:hover { background: var(--wf-gold); color: var(--wf-ink); }
 </style>
 </head>
 <body>
+
+<!-- TOGGLE TEMA -->
+<button id="theme-toggle" onclick="toggleTheme()" title="Cambia tema">
+  <span class="ti" id="theme-icon">☀️</span>
+  <span id="theme-label">Giorno</span>
+</button>
 
 <!-- LOGIN SCREEN -->
 <div id="login-screen" style="display:flex;position:fixed;inset:0;background:var(--bg);z-index:9999;align-items:center;justify-content:center">
@@ -405,6 +620,7 @@ window._firebaseReady = true;
   <button class="nav-btn" onclick="showPage('inattivi')">📦 &nbsp;Inattivi</button>
   <button class="nav-btn" onclick="showPage('attivita')">📋 &nbsp;Attività</button>
   <button class="nav-btn" onclick="showPage('calendario')">📅 &nbsp;Calendario</button>
+  <button class="nav-btn" onclick="showPage('workflow')">☀️ &nbsp;Workflow</button>
   <div style="margin-top:auto; padding: 0 24px 16px; display:flex; flex-direction:column; gap:8px;">
     <button class="nav-btn" style="padding:10px 0; font-size:12px;" onclick="showPage('database')">🗄️ &nbsp;Database</button>
     <button class="nav-btn" style="padding:10px 0; font-size:12px;" onclick="showPage('impostazioni')">⚙️ &nbsp;Impostazioni</button>
@@ -768,9 +984,47 @@ window._firebaseReady = true;
   <!-- DATABASE -->
   <div id="page-database" class="page">
     <div class="section-header">
-      <div><h1 class="section-title">Database</h1><p class="section-sub">Visualizza, aggiungi e cancella record</p></div>
-      <div style="display:flex;gap:8px;align-items:center">
+      <div><h1 class="section-title">Database</h1><p class="section-sub">Visualizza, importa e gestisci record</p></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button onclick="dbImportCsvOpen()" style="background:rgba(96,165,250,0.12);border:1px solid rgba(96,165,250,0.4);color:var(--blue);border-radius:8px;padding:8px 16px;cursor:pointer;font-size:13px;font-family:'DM Sans',sans-serif;font-weight:600;display:flex;align-items:center;gap:6px">📤 Importa CSV</button>
         <button class="btn-dashboard" onclick="showPage('dashboard')">◈ Dashboard</button>
+      </div>
+    </div>
+    <!-- Import CSV panel -->
+    <div id="db-import-panel" style="display:none;background:rgba(96,165,250,0.07);border:1px solid rgba(96,165,250,0.25);border-radius:12px;padding:20px 24px;margin-bottom:24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <span style="font-weight:700;color:var(--blue);font-size:14px">📤 Importa CSV</span>
+        <button onclick="dbImportCsvClose()" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer">✕</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px" class="import-grid">
+        <div>
+          <label class="form-label">Tabella di destinazione</label>
+          <select id="import-table-sel" class="form-control" onchange="dbImportTableChange()">
+            <option value="">— Seleziona —</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Modalità importazione</label>
+          <select id="import-mode-sel" class="form-control">
+            <option value="merge">Merge — aggiunge nuovi, aggiorna esistenti</option>
+            <option value="replace">Sostituisci — cancella tutto e reimporta</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-bottom:16px">
+        <label class="form-label">File CSV (separatore <code style="color:var(--accent)">;</code> — stesso formato dell'esportazione)</label>
+        <input type="file" id="import-file-input" accept=".csv,text/csv" class="form-control" style="padding:10px" onchange="dbImportPreview()">
+      </div>
+      <div id="import-preview-wrap" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span style="font-size:13px;font-weight:600;color:var(--text)" id="import-preview-title">Anteprima</span>
+          <div style="display:flex;gap:8px">
+            <button onclick="dbImportCsvClose()" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:6px 14px;cursor:pointer;font-size:13px;font-family:'DM Sans',sans-serif">Annulla</button>
+            <button onclick="dbImportConfirm()" style="background:var(--accent);border:none;color:var(--bg);border-radius:8px;padding:6px 18px;cursor:pointer;font-size:13px;font-family:'DM Sans',sans-serif;font-weight:700" id="import-confirm-btn">✓ Conferma importazione</button>
+          </div>
+        </div>
+        <div id="import-preview-table" style="overflow-x:auto;border-radius:10px;border:1px solid var(--border);max-height:280px;overflow-y:auto"></div>
+        <div id="import-stats" style="margin-top:10px;font-size:12px;color:var(--muted)"></div>
       </div>
     </div>
     <!-- Tab selettore tabella -->
@@ -812,6 +1066,146 @@ window._firebaseReady = true;
       <button class="btn btn-primary" onclick="saveClientId()" style="margin-top:8px">💾 Salva Impostazioni</button>
       <div id="client-id-status" style="margin-top:12px;font-size:13px;color:var(--muted)"></div>
     </div>
+  </div>
+
+  <!-- WORKFLOW PAGE -->
+  <div id="page-workflow" class="page">
+    <div class="wf-progress-wrap">
+      <span class="wf-progress-label">Avanzamento giornata</span>
+      <div class="wf-bar-outer"><div class="wf-bar-inner" id="wf-bar"></div></div>
+      <span class="wf-pct" id="wf-pct">0%</span>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:8px">
+      <h1 class="section-title" style="color:var(--wf-ink)">Workflow Acquisizione</h1>
+      <button class="btn-dashboard" onclick="showPage('dashboard')">◈ Dashboard</button>
+    </div>
+    <p class="section-sub" style="margin-bottom:28px;color:var(--wf-slate)">Checklist operativa giornaliera · Da mattina a sera</p>
+
+    <div class="wf-stats-strip">
+      <div class="wf-stat"><div class="wf-stat-num">8h</div><div class="wf-stat-label">Durata giornata</div></div>
+      <div class="wf-stat"><div class="wf-stat-num">5</div><div class="wf-stat-label">Fasi operative</div></div>
+      <div class="wf-stat"><div class="wf-stat-num">3–5</div><div class="wf-stat-label">Contatti target/die</div></div>
+      <div class="wf-stat"><div class="wf-stat-num">1</div><div class="wf-stat-label">Appuntamento min/die</div></div>
+    </div>
+
+    <div class="wf-section-label">— Fasi della giornata</div>
+
+    <!-- FASE 1 -->
+    <div class="wf-fase">
+      <div class="wf-fase-header">
+        <span class="wf-fase-time">07:30 – 08:30</span>
+        <span class="wf-fase-title">Preparazione &amp; Intelligence</span>
+        <span class="wf-fase-badge wf-badge-admin">Admin</span>
+      </div>
+      <div class="wf-fase-body">
+        <ul class="wf-task-list">
+          <li class="wf-task-item"><div class="wf-check" onclick="wfToggle(this)"></div><div class="wf-task-text"><strong>Rassegna immobiliare</strong> — Controlla nuovi annunci in zona. Segnati le case invendute da 60+ giorni.<span class="wf-tip">Cerca venditori privati: sono potenziali mandanti da convertire.</span></div></li>
+          <li class="wf-task-item"><div class="wf-check" onclick="wfToggle(this)"></div><div class="wf-task-text"><strong>CRM mattutino</strong> — Rivedi i follow-up in scadenza oggi. Chi ha detto "richiamami tra un mese"?</div></li>
+          <li class="wf-task-item"><div class="wf-check" onclick="wfToggle(this)"></div><div class="wf-task-text"><strong>Prepara gli appuntamenti del giorno</strong> — Schede proprietà, stima di valore rapida, 3 domande chiave per proprietario.<span class="wf-tip">Domanda chiave: "Entro quando avrebbe bisogno di vendere?"</span></div></li>
+          <li class="wf-task-item"><div class="wf-check" onclick="wfToggle(this)"></div><div class="wf-task-text"><strong>Obiettivo del giorno</strong> — Scrivi il numero di contatti, appuntamenti fissati, e l'unico risultato che renderebbe questa giornata un successo.</div></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="wf-divider"><div class="wf-diamond"></div></div>
+
+    <!-- FASE 2 -->
+    <div class="wf-fase">
+      <div class="wf-fase-header">
+        <span class="wf-fase-time">08:30 – 10:30</span>
+        <span class="wf-fase-title">Contatti in Uscita (Cold &amp; Warm)</span>
+        <span class="wf-fase-badge wf-badge-core">Core</span>
+      </div>
+      <div class="wf-fase-body">
+        <ul class="wf-task-list">
+          <li class="wf-task-item"><div class="wf-check" onclick="wfToggle(this)"></div><div class="wf-task-text"><strong>Chiamate su invenduti 60–180 giorni</strong> — Contatta 5–8 proprietari che vendono in autonomia da troppo tempo.</div></li>
+          <li class="wf-task-item"><div class="wf-check" onclick="wfToggle(this)"></div><div class="wf-task-text"><strong>Follow-up contatti tiepidi</strong> — Riprendi 3–5 proprietari già contattati. Porta un aggiornamento concreto.</div></li>
+          <li class="wf-task-item"><div class="wf-check" onclick="wfToggle(this)"></div><div class="wf-task-text"><strong>WhatsApp di cortesia</strong> — 2–3 messaggi personalizzati a contatti "in sonno": articoli, notizie urbanistiche. Niente pitch diretto.<span class="wf-tip">Costruisci autorevolezza prima di chiedere il mandato.</span></div></li>
+          <li class="wf-task-item"><div class="wf-check" onclick="wfToggle(this)"></div><div class="wf-task-text"><strong>Porta a porta (se applicabile)</strong> — In zone ad alta densità, suona 10–15 campanelli con materiale cartaceo.</div></li>
+        </ul>
+        <div class="wf-tip-block">
+          <div class="wf-tip-title">💡 Regola d'oro</div>
+          <p>Le prime due ore della giornata sono sacre all'outbound. Niente email, niente social, niente burocrazia. Solo contatti.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="wf-divider"><div class="wf-diamond"></div></div>
+
+    <!-- FASE 3 -->
+    <div class="wf-fase">
+      <div class="wf-fase-header">
+        <span class="wf-fase-time">10:30 – 13:00</span>
+        <span class="wf-fase-title">Appuntamenti di Acquisizione</span>
+        <span class="wf-fase-badge wf-badge-field">Sul Campo</span>
+      </div>
+      <div class="wf-fase-body">
+        <ul class="wf-task-list">
+          <li class="wf-task-item"><div class="wf-check" onclick="wfToggle(this)"></div><div class="wf-task-text"><strong>Sopralluogo e ascolto attivo</strong> — Arriva 5 minuti prima. Prima visita in silenzio, poi fai parlare il proprietario.<span class="wf-tip">Il 70% del tempo deve parlare il proprietario, il 30% tu.</span></div></li>
+          <li class="wf-task-item"><div class="wf-check" onclick="wfToggle(this)"></div><div class="wf-task-text"><strong>Analisi comparativa di mercato</strong> — Presenta 3–5 vendite simili in zona. Dati oggettivi, non opinioni.</div></li>
+          <li class="wf-task-item"><div class="wf-check" onclick="wfToggle(this)"></div><div class="wf-task-text"><strong>Presentazione dei tuoi servizi</strong> — Piano marketing specifico per quell'immobile: foto professionale, portali, newsletter, acquirenti in banca.</div></li>
+          <li class="wf-task-item"><div class="wf-check" onclick="wfToggle(this)"></div><div class="wf-task-text"><strong>Chiusura sul mandato</strong> — Proponi il mandato in esclusiva. Se non è pronto, fissa subito un secondo incontro con data e ora precisa.<span class="wf-tip">"Quando possiamo rivederci? Giovedì mattina o venerdì pomeriggio?"</span></div></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="wf-divider"><div class="wf-diamond"></div></div>
+
+    <!-- FASE 4 -->
+    <div class="wf-fase">
+      <div class="wf-fase-header">
+        <span class="wf-fase-time">14:30 – 17:00</span>
+        <span class="wf-fase-title">Presidio &amp; Networking</span>
+        <span class="wf-fase-badge wf-badge-field">Sul Campo</span>
+      </div>
+      <div class="wf-fase-body">
+        <ul class="wf-task-list">
+          <li class="wf-task-item"><div class="wf-check" onclick="wfToggle(this)"></div><div class="wf-task-text"><strong>Giro di zona</strong> — 30 minuti nell'area target. Cartelli "Vendesi" privati, immobili sfitti, edifici da ristrutturare.</div></li>
+          <li class="wf-task-item"><div class="wf-check" onclick="wfToggle(this)"></div><div class="wf-task-text"><strong>Networking referral</strong> — Contatta un notaio, avvocato, geometra o amministratore di condominio. Tenersi top-of-mind.</div></li>
+          <li class="wf-task-item"><div class="wf-check" onclick="wfToggle(this)"></div><div class="wf-task-text"><strong>Social media locale</strong> — Pubblica contenuto di valore: un dato sul mercato locale, domanda ai follower, immobile appena acquisito.<span class="wf-tip">No al post "VENDUTO!" anonimo. Racconta la storia dell'acquisizione.</span></div></li>
+          <li class="wf-task-item"><div class="wf-check" onclick="wfToggle(this)"></div><div class="wf-task-text"><strong>Aggiorna acquirenti qualificati</strong> — 2–3 acquirenti: novità, immobili in arrivo, offerte in scadenza. L'acquirente soddisfatto genera referral.</div></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="wf-divider"><div class="wf-diamond"></div></div>
+
+    <!-- FASE 5 -->
+    <div class="wf-fase">
+      <div class="wf-fase-header">
+        <span class="wf-fase-time">17:00 – 18:30</span>
+        <span class="wf-fase-title">Chiusura Operativa &amp; Pianificazione</span>
+        <span class="wf-fase-badge wf-badge-strategy">Strategia</span>
+      </div>
+      <div class="wf-fase-body">
+        <ul class="wf-task-list">
+          <li class="wf-task-item"><div class="wf-check" onclick="wfToggle(this)"></div><div class="wf-task-text"><strong>Aggiorna il CRM</strong> — Registra ogni contatto fatto oggi: esito chiamata, umore proprietario, prossimo step.</div></li>
+          <li class="wf-task-item"><div class="wf-check" onclick="wfToggle(this)"></div><div class="wf-task-text"><strong>Prepara le proposte di mandato</strong> — Note personalizzate e documento di conferimento incarico con dati già inseriti.</div></li>
+          <li class="wf-task-item"><div class="wf-check" onclick="wfToggle(this)"></div><div class="wf-task-text"><strong>Pianifica domani</strong> — Blocca gli appuntamenti, pianifica le chiamate mattutine, verifica le scadenze. Domani inizia stasera.</div></li>
+          <li class="wf-task-item"><div class="wf-check" onclick="wfToggle(this)"></div><div class="wf-task-text"><strong>Review giornaliera</strong> — Hai raggiunto l'obiettivo di stamattina? Cosa ha funzionato? Cosa migliorare?</div></li>
+        </ul>
+        <div class="wf-tip-block">
+          <div class="wf-tip-title">📌 Regola del 3</div>
+          <p>Ogni giorno: 3 nuovi contatti, 3 follow-up, 1 appuntamento. In un mese hai 60 nuovi contatti nel funnel.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI Box -->
+    <div class="wf-kpi-box">
+      <h3>KPI Giornalieri da Monitorare</h3>
+      <div class="wf-kpi-grid">
+        <div class="wf-kpi-item"><div class="wf-num">8–10</div><div class="wf-label">Chiamate outbound</div></div>
+        <div class="wf-kpi-item"><div class="wf-num">2–3</div><div class="wf-label">Nuovi contatti qualificati</div></div>
+        <div class="wf-kpi-item"><div class="wf-num">1–2</div><div class="wf-label">Appuntamenti fissati</div></div>
+        <div class="wf-kpi-item"><div class="wf-num">1</div><div class="wf-label">Proposta mandato presentata</div></div>
+        <div class="wf-kpi-item"><div class="wf-num">1</div><div class="wf-label">Post social pubblicato</div></div>
+        <div class="wf-kpi-item"><div class="wf-num">100%</div><div class="wf-label">CRM aggiornato</div></div>
+      </div>
+    </div>
+
+    <button class="wf-reset-btn" onclick="wfReset()">↺ Ricomincia Checklist</button>
   </div>
 
 </div><!-- /main -->
@@ -1177,6 +1571,7 @@ function renderPage(name) {
     const emailInp = document.getElementById('gcal-email-input');
     if(emailInp && GCAL_EMAIL) emailInp.value = GCAL_EMAIL;
   }
+  else if(name === 'workflow') wfUpdateProgress();
 }
 
 // ─────────────────────────────────────────────
@@ -3899,6 +4294,176 @@ function dbExportCsv(tableKey) {
 }
 
 // ─────────────────────────────────────────────
+//  IMPORT CSV
+// ─────────────────────────────────────────────
+let _importParsed = []; // righe parsate dall'anteprima
+
+function dbImportCsvOpen() {
+  const panel = document.getElementById('db-import-panel');
+  if(!panel) return;
+  // Popola select tabelle
+  const sel = document.getElementById('import-table-sel');
+  sel.innerHTML = '<option value="">— Seleziona —</option>' +
+    DB_TABLES.map(t => `<option value="${t.key}">${t.label}</option>`).join('');
+  // Pre-seleziona la tabella attiva
+  if(dbActiveTable) sel.value = dbActiveTable;
+  panel.style.display = 'block';
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function dbImportCsvClose() {
+  const panel = document.getElementById('db-import-panel');
+  if(panel) panel.style.display = 'none';
+  const fileInput = document.getElementById('import-file-input');
+  if(fileInput) fileInput.value = '';
+  const preview = document.getElementById('import-preview-wrap');
+  if(preview) preview.style.display = 'none';
+  _importParsed = [];
+}
+
+function dbImportTableChange() {
+  // Reset preview quando si cambia tabella
+  const preview = document.getElementById('import-preview-wrap');
+  if(preview) preview.style.display = 'none';
+  const fileInput = document.getElementById('import-file-input');
+  if(fileInput) fileInput.value = '';
+  _importParsed = [];
+}
+
+function dbImportPreview() {
+  const fileInput = document.getElementById('import-file-input');
+  const tableKey = document.getElementById('import-table-sel').value;
+  const previewWrap = document.getElementById('import-preview-wrap');
+  const previewTable = document.getElementById('import-preview-table');
+  const stats = document.getElementById('import-stats');
+  const titleEl = document.getElementById('import-preview-title');
+
+  if(!fileInput.files.length) return;
+  if(!tableKey) { toast('Seleziona prima la tabella di destinazione', 'orange'); fileInput.value=''; return; }
+
+  const file = fileInput.files[0];
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const text = e.target.result;
+      const lines = text.split(/\r?\n/).filter(l => l.trim());
+      if(lines.length < 2) { toast('Il file CSV è vuoto o ha solo intestazione', 'orange'); return; }
+
+      // Parse CSV con supporto a campi quotati
+      function parseCsvLine(line) {
+        const result = [];
+        let cur = ''; let inQ = false;
+        for(let i = 0; i < line.length; i++) {
+          const c = line[i];
+          if(c === '"') {
+            if(inQ && line[i+1] === '"') { cur += '"'; i++; }
+            else inQ = !inQ;
+          } else if(c === ';' && !inQ) {
+            result.push(cur); cur = '';
+          } else cur += c;
+        }
+        result.push(cur);
+        return result;
+      }
+
+      const headers = parseCsvLine(lines[0]);
+      const rows = [];
+      for(let i = 1; i < lines.length; i++) {
+        const vals = parseCsvLine(lines[i]);
+        if(vals.length < 2) continue;
+        const obj = {};
+        headers.forEach((h, idx) => {
+          let v = vals[idx] ?? '';
+          // Converti tipi
+          if(v === 'true') v = true;
+          else if(v === 'false') v = false;
+          else if(v !== '' && !isNaN(v) && h !== 'id' && h !== 'telefono' && h !== 'cap')
+            v = Number(v);
+          obj[h] = v;
+        });
+        rows.push(obj);
+      }
+      _importParsed = rows;
+
+      // Statistiche merge preview
+      const existing = db[tableKey] || [];
+      const existingIds = new Set(existing.map(r => String(r.id)));
+      const nuovi = rows.filter(r => !existingIds.has(String(r.id))).length;
+      const aggiornati = rows.filter(r => existingIds.has(String(r.id))).length;
+      const tableDef = DB_TABLES.find(t => t.key === tableKey);
+
+      titleEl.textContent = `Anteprima — ${rows.length} righe in ${tableDef?.label || tableKey}`;
+
+      // Mostra prime 8 righe
+      const previewRows = rows.slice(0, 8);
+      const cols = headers.slice(0, 8); // max 8 colonne in anteprima
+      previewTable.innerHTML = `
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr style="background:var(--card)">
+            ${cols.map(h => `<th style="padding:8px 10px;text-align:left;color:var(--accent);font-size:10px;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;border-bottom:1px solid var(--border)">${h}</th>`).join('')}
+            ${headers.length > 8 ? `<th style="padding:8px 10px;color:var(--muted);border-bottom:1px solid var(--border)">+${headers.length-8} col…</th>` : ''}
+          </tr></thead>
+          <tbody>
+            ${previewRows.map((row, idx) => {
+              const isNew = !existingIds.has(String(row.id));
+              return `<tr style="border-bottom:1px solid var(--border);background:${isNew ? 'rgba(74,222,128,0.04)' : idx%2===0?'var(--bg)':'var(--card)'}">
+                ${cols.map(h => `<td style="padding:7px 10px;color:${h==='id'?'var(--muted)':'var(--text)'};max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${String(row[h]??'')}">${String(row[h]??'—').slice(0,30)}</td>`).join('')}
+                ${headers.length > 8 ? `<td style="padding:7px 10px;color:var(--muted)">…</td>` : ''}
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+        ${rows.length > 8 ? `<div style="padding:8px 12px;color:var(--muted);font-size:11px;font-style:italic">… e altre ${rows.length - 8} righe</div>` : ''}`;
+
+      const modeLabel = document.getElementById('import-mode-sel').value === 'replace' ? 'sostituzione completa' : 'merge';
+      stats.innerHTML = `
+        Modalità: <strong style="color:var(--text)">${modeLabel}</strong> &nbsp;·&nbsp;
+        <span style="color:var(--green)">🟢 ${nuovi} nuovi</span> &nbsp;·&nbsp;
+        <span style="color:var(--accent)">🟡 ${aggiornati} da aggiornare</span> &nbsp;·&nbsp;
+        ${document.getElementById('import-mode-sel').value === 'replace' ? `<span style="color:var(--red)">🔴 ${existing.length} esistenti verranno sostituiti</span>` : `<span style="color:var(--muted)">${existing.length} esistenti in db</span>`}`;
+
+      previewWrap.style.display = 'block';
+    } catch(err) {
+      toast('Errore nel parsing del CSV: ' + err.message, 'orange');
+      console.error(err);
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function dbImportConfirm() {
+  if(!_importParsed.length) { toast('Nessun dato da importare', 'orange'); return; }
+  const tableKey = document.getElementById('import-table-sel').value;
+  const mode = document.getElementById('import-mode-sel').value;
+  if(!tableKey) { toast('Seleziona la tabella', 'orange'); return; }
+
+  const tableDef = DB_TABLES.find(t => t.key === tableKey);
+  const modeLabel = mode === 'replace' ? 'SOSTITUIRE COMPLETAMENTE' : 'eseguire il merge in';
+  if(!confirm(`Confermi di ${modeLabel} "${tableDef?.label || tableKey}" con ${_importParsed.length} record?\n\n${mode === 'replace' ? '⚠️ Tutti i dati esistenti in questa tabella saranno eliminati.' : 'I record con ID esistente verranno aggiornati. I nuovi verranno aggiunti.'}`)) return;
+
+  if(mode === 'replace') {
+    db[tableKey] = _importParsed;
+  } else {
+    // Merge: mappa per ID
+    const map = {};
+    (db[tableKey] || []).forEach(r => { map[String(r.id)] = r; });
+    _importParsed.forEach(r => { map[String(r.id)] = r; });
+    db[tableKey] = Object.values(map);
+  }
+
+  saveDb();
+  dbImportCsvClose();
+  renderDatabase(tableKey);
+  // Aggiorna le altre viste
+  try { renderDashboard(); } catch(e){}
+  try { if(tableKey==='acquirenti'||tableKey==='proprietari') renderPersone(tableKey); } catch(e){}
+  try { if(tableKey==='immobili') renderImmobili(); } catch(e){}
+  try { renderAttivita(); } catch(e){}
+  toast(`✅ Importazione completata: ${_importParsed.length} record in ${tableDef?.label || tableKey}`);
+  _importParsed = [];
+}
+
+// ─────────────────────────────────────────────
 //  PIN AUTH
 // ─────────────────────────────────────────────
 const PIN_HASH = '0049a889390656f34e5d69dd50d2aa55228cad5e20095eaccf507ff7993ce2c9';
@@ -3938,6 +4503,99 @@ if(sessionStorage.getItem('crm_auth') === '1') {
   if(window._startFirebaseSync) window._startFirebaseSync();
   else window.addEventListener('load', () => { if(window._startFirebaseSync) window._startFirebaseSync(); });
 }
+
+// ─────────────────────────────────────────────
+//  TEMA GIORNO / NOTTE
+// ─────────────────────────────────────────────
+(function() {
+  const saved = localStorage.getItem('crm_theme') || 'night';
+  applyTheme(saved, false);
+})();
+
+function applyTheme(mode, save) {
+  const html = document.documentElement;
+  const icon = document.getElementById('theme-icon');
+  const label = document.getElementById('theme-label');
+  if(mode === 'day') {
+    html.classList.add('theme-day');
+    if(icon) icon.textContent = '🌙';
+    if(label) label.textContent = 'Notte';
+  } else {
+    html.classList.remove('theme-day');
+    if(icon) icon.textContent = '☀️';
+    if(label) label.textContent = 'Giorno';
+  }
+  if(save !== false) localStorage.setItem('crm_theme', mode);
+}
+
+function toggleTheme() {
+  const isDay = document.documentElement.classList.contains('theme-day');
+  applyTheme(isDay ? 'night' : 'day');
+}
+
+// ─────────────────────────────────────────────
+//  WORKFLOW CHECKLIST
+// ─────────────────────────────────────────────
+function wfToggle(el) {
+  el.classList.toggle('done');
+  el.closest('.wf-task-item').classList.toggle('done-item');
+  wfUpdateProgress();
+  wfSave();
+}
+
+function wfUpdateProgress() {
+  const all  = document.querySelectorAll('#page-workflow .wf-check');
+  const done = document.querySelectorAll('#page-workflow .wf-check.done');
+  if(!all.length) return;
+  const pct = Math.round((done.length / all.length) * 100);
+  const bar = document.getElementById('wf-bar');
+  const pctEl = document.getElementById('wf-pct');
+  if(bar) bar.style.width = pct + '%';
+  if(pctEl) pctEl.textContent = pct + '%';
+}
+
+function wfSave() {
+  const states = [];
+  document.querySelectorAll('#page-workflow .wf-check').forEach(c => {
+    states.push(c.classList.contains('done') ? 1 : 0);
+  });
+  // Reset daily: save with today's date key
+  const today = new Date().toISOString().slice(0,10);
+  localStorage.setItem('wf_checks_' + today, JSON.stringify(states));
+}
+
+function wfLoad() {
+  const today = new Date().toISOString().slice(0,10);
+  const saved = localStorage.getItem('wf_checks_' + today);
+  if(!saved) return;
+  try {
+    const states = JSON.parse(saved);
+    const checks = document.querySelectorAll('#page-workflow .wf-check');
+    checks.forEach((c, i) => {
+      if(states[i]) {
+        c.classList.add('done');
+        c.closest('.wf-task-item').classList.add('done-item');
+      }
+    });
+    wfUpdateProgress();
+  } catch(e) {}
+}
+
+function wfReset() {
+  document.querySelectorAll('#page-workflow .wf-check').forEach(c => c.classList.remove('done'));
+  document.querySelectorAll('#page-workflow .wf-task-item').forEach(i => i.classList.remove('done-item'));
+  wfUpdateProgress();
+  const today = new Date().toISOString().slice(0,10);
+  localStorage.removeItem('wf_checks_' + today);
+}
+
+// Load workflow state when page becomes visible
+const _origShowPage = showPage;
+window.showPage = function(name) {
+  _origShowPage(name);
+  if(name === 'workflow') { wfLoad(); wfUpdateProgress(); }
+};
+
 </script>
 </body>
 </html>
